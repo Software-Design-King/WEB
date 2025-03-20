@@ -1,0 +1,13 @@
+//프로젝트 세팅
+
+import React from "react";
+
+const MainPage = () => {
+  return (
+    <div>
+      <h1>메인 페이지</h1>
+    </div>
+  );
+};
+
+export default MainPage;
