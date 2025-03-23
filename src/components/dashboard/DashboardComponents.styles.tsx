@@ -3,17 +3,15 @@ import { colors } from "../common/Common.styles";
 
 // 대시보드 그리드 컨테이너
 export const DashboardGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
   width: 100%;
 
   @media (max-width: 1200px) {
-    grid-template-columns: repeat(6, 1fr);
   }
 
   @media (max-width: 768px) {
-    grid-template-columns: 1fr;
     gap: 1rem;
   }
 `;
@@ -158,7 +156,9 @@ export const TableRow = styled.tr`
 `;
 
 // 상태 뱃지
-export const StatusBadge = styled.span<{ status: "good" | "warning" | "alert" }>`
+export const StatusBadge = styled.span<{
+  status: "good" | "warning" | "alert";
+}>`
   display: inline-block;
   padding: 0.25rem 0.75rem;
   border-radius: 1rem;

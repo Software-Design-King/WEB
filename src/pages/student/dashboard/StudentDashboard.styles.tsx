@@ -21,7 +21,7 @@ export const Logo = styled.div`
   gap: 12px;
   font-size: 18px;
   font-weight: 600;
-  color: #3F51B5;
+  color: #3f51b5;
 
   svg {
     width: 32px;
@@ -60,14 +60,17 @@ export const Sidebar = styled.nav`
 export const SidebarItem = styled.div<{ active?: boolean }>`
   padding: 12px 24px;
   font-size: 16px;
-  color: ${props => props.active ? '#3F51B5' : '#333'};
-  background-color: ${props => props.active ? 'rgba(63, 81, 181, 0.1)' : 'transparent'};
-  border-left: 4px solid ${props => props.active ? '#3F51B5' : 'transparent'};
+  color: ${(props) => (props.active ? "#3F51B5" : "#333")};
+  background-color: ${(props) =>
+    props.active ? "rgba(63, 81, 181, 0.1)" : "transparent"};
+  border-left: 4px solid
+    ${(props) => (props.active ? "#3F51B5" : "transparent")};
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    background-color: ${props => props.active ? 'rgba(63, 81, 181, 0.1)' : 'rgba(0, 0, 0, 0.05)'};
+    background-color: ${(props) =>
+      props.active ? "rgba(63, 81, 181, 0.1)" : "rgba(0, 0, 0, 0.05)"};
   }
 `;
 
@@ -78,7 +81,7 @@ export const ContentArea = styled.main`
 `;
 
 export const WelcomeCard = styled.div`
-  background-color: #3F51B5;
+  background-color: #3f51b5;
   color: white;
   border-radius: 8px;
   padding: 24px;
@@ -98,11 +101,9 @@ export const WelcomeText = styled.p`
 
 export const CardGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
   gap: 24px;
 
   @media (max-width: 768px) {
-    grid-template-columns: 1fr;
   }
 `;
 

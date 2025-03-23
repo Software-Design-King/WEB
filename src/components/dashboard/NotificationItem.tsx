@@ -2,7 +2,8 @@ import React from 'react';
 import {
   NotificationItem as StyledNotificationItem,
   NotificationTime,
-  NotificationContent
+  NotificationContent,
+  NotificationBadge
 } from '../../pages/student/dashboard/styles/StudentDashboard.styles';
 
 interface NotificationItemProps {
@@ -17,7 +18,8 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   isNew
 }) => {
   return (
-    <StyledNotificationItem isNew={isNew}>
+    <StyledNotificationItem>
+      {isNew && <NotificationBadge />}
       <NotificationTime>{time}</NotificationTime>
       <NotificationContent>{content}</NotificationContent>
     </StyledNotificationItem>

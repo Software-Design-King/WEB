@@ -5,12 +5,19 @@ import {
   CounselingDate,
 } from "../../pages/teacher/dashboard/styles/TeacherDashboard.styles";
 
-interface TaskItemProps {
+export interface TaskData {
+  id: number;
   title: string;
   deadline: string;
 }
 
-const TaskItem: React.FC<TaskItemProps> = ({ title, deadline }) => {
+interface TaskItemProps {
+  task: TaskData;
+}
+
+const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
+  const { title, deadline } = task;
+  
   return (
     <AssignmentStatusContainer>
       <div>

@@ -15,7 +15,6 @@ interface GradeChartProps {
   data: {
     subject: string;
     점수: number;
-    전체평균: number;
   }[];
 }
 
@@ -35,11 +34,6 @@ const GradeChart: React.FC<GradeChartProps> = ({ data }) => {
           dataKey="점수"
           fill={colors.primary.main}
           name="내 점수"
-        />
-        <Bar
-          dataKey="전체평균"
-          fill={colors.secondary.main}
-          name="전체 평균"
         />
       </BarChart>
     </ResponsiveContainer>

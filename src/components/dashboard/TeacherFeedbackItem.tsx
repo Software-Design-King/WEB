@@ -8,19 +8,23 @@ import {
   FeedbackContent,
 } from "../../pages/teacher/dashboard/styles/TeacherDashboard.styles";
 
-interface TeacherFeedbackItemProps {
+export interface FeedbackData {
+  id: number;
   studentName: string;
-  date: string;
   category: string;
+  date: string;
   content: string;
 }
 
+interface TeacherFeedbackItemProps {
+  feedback: FeedbackData;
+}
+
 const TeacherFeedbackItem: React.FC<TeacherFeedbackItemProps> = ({
-  studentName,
-  date,
-  category,
-  content,
+  feedback,
 }) => {
+  const { studentName, date, category, content } = feedback;
+  
   return (
     <FeedbackItem>
       <FeedbackHeader>
