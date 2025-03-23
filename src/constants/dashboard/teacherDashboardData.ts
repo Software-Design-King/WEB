@@ -2,7 +2,7 @@ import { colors } from "../../components/common/Common.styles";
 
 // 교사 정보
 export const userData = {
-  name: "김선생",
+  name: "권도훈",
   role: "교사",
   subject: "수학",
   isHomeroom: true,

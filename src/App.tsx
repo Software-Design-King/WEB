@@ -4,8 +4,6 @@ import { Suspense, lazy } from "react";
 const LoginPage = lazy(() => import("./pages/login"));
 const StudentDashboard = lazy(() => import("./pages/student/dashboard"));
 const TeacherDashboard = lazy(() => import("./pages/teacher/dashboard"));
-const GradePage = lazy(() => import("./pages/grade"));
-const CounselingPage = lazy(() => import("./pages/counseling"));
 
 // 새로 추가된 페이지 컴포넌트
 const StudentGradesPage = lazy(() => import("./pages/student/grades"));
@@ -28,9 +26,7 @@ function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
-          <Route path="/grade" element={<GradePage />} />
-          <Route path="/counseling" element={<CounselingPage />} />
-          
+
           {/* 새로 추가된 경로 */}
           <Route path="/student/grades" element={<StudentGradesPage />} />
           <Route path="/student/records" element={<StudentRecordsPage />} />

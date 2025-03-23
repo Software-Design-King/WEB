@@ -1,7 +1,12 @@
 import React, { useState } from "react";
 import styled from "@emotion/styled";
-import { Select, Table, Input, Button, Modal, Form, message } from "antd";
-import { EditOutlined, DeleteOutlined, SaveOutlined, UserOutlined } from "@ant-design/icons";
+import { Select, Table, Input, Button, Modal, message } from "antd";
+import {
+  EditOutlined,
+  DeleteOutlined,
+  SaveOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
 import DashboardLayout from "../../../components/layout/DashboardLayout";
 import TeacherSidebar from "../../../components/layout/TeacherSidebar";
 import {
@@ -10,11 +15,18 @@ import {
   ContentContainer,
 } from "../../../components/dashboard/DashboardComponents.styles";
 import { colors } from "../../../components/common/Common.styles";
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from "recharts";
+import {
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  ResponsiveContainer,
+} from "recharts";
 
 // 임시 교사 데이터
 const teacherData = {
-  name: "이지원",
+  name: "권도훈",
   role: "교사",
   subject: "수학",
 };
@@ -52,8 +64,10 @@ const subjects = [
 
 // 임시 성적 데이터
 const initialGradesData = {
-  1: { // 학생 ID
-    "2-1": { // 학기
+  1: {
+    // 학생 ID
+    "2-1": {
+      // 학기
       subjects: {
         1: { score: 85, grade: "B" }, // 국어
         2: { score: 92, grade: "A" }, // 영어
@@ -74,15 +88,16 @@ const initialGradesData = {
         late: 3,
         earlyLeave: 1,
       },
-      comments: "수학과목에 어려움을 겪고 있으나, 영어와 사회 과목에서 우수한 성적을 보이고 있습니다."
-    }
+      comments:
+        "수학과목에 어려움을 겪고 있으나, 영어와 사회 과목에서 우수한 성적을 보이고 있습니다.",
+    },
   },
 };
 
 // 등급 계산 함수
 const calculateGrade = (score, maxScore) => {
   const percentage = (score / maxScore) * 100;
-  
+
   if (percentage >= 90) return "A";
   if (percentage >= 80) return "B";
   if (percentage >= 70) return "C";
@@ -104,7 +119,7 @@ const ControlsContainer = styled.div`
   gap: 1rem;
   margin-bottom: 1rem;
   flex-wrap: wrap;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 0.5rem;
@@ -113,7 +128,7 @@ const ControlsContainer = styled.div`
 
 const StyledSelect = styled(Select)`
   min-width: 150px;
-  
+
   @media (max-width: 768px) {
     width: 100%;
   }
@@ -124,7 +139,7 @@ const GradeStatContainer = styled.div`
   flex-wrap: wrap;
   gap: 1rem;
   margin-bottom: 1.5rem;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
   }
@@ -195,26 +210,28 @@ const ButtonContainer = styled.div`
 
 const TeacherGradesPage: React.FC = () => {
   const [selectedStudent, setSelectedStudent] = useState<number | null>(null);
-  const [selectedSemester, setSelectedSemester] = useState(semesterOptions[3].value); // 기본값: 2학년 2학기
+  const [selectedSemester, setSelectedSemester] = useState(
+    semesterOptions[3].value
+  ); // 기본값: 2학년 2학기
   const [gradesData, setGradesData] = useState(initialGradesData);
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState({});
   const [comments, setComments] = useState("");
   const [isModalVisible, setIsModalVisible] = useState(false);
-  
+
   // 학생 선택 핸들러
   const handleStudentChange = (value) => {
     setSelectedStudent(value);
     setIsEditing(false);
-    
+
     // 선택된 학생의 특정 학기 성적이 없을 경우 빈 데이터 생성
     if (value && !gradesData[value]?.[selectedSemester]) {
       const newGradesData = { ...gradesData };
-      
+
       if (!newGradesData[value]) {
         newGradesData[value] = {};
       }
-      
+
       newGradesData[value][selectedSemester] = {
         subjects: subjects.reduce((acc, subject) => {
           acc[subject.id] = { score: 0, grade: "F" };
@@ -230,12 +247,12 @@ const TeacherGradesPage: React.FC = () => {
           late: 0,
           earlyLeave: 0,
         },
-        comments: ""
+        comments: "",
       };
-      
+
       setGradesData(newGradesData);
     }
-    
+
     // 코멘트 업데이트
     if (value && gradesData[value]?.[selectedSemester]) {
       setComments(gradesData[value][selectedSemester].comments || "");
@@ -248,15 +265,15 @@ const TeacherGradesPage: React.FC = () => {
   const handleSemesterChange = (value) => {
     setSelectedSemester(value);
     setIsEditing(false);
-    
+
     // 학생이 선택되어 있고, 해당 학기 데이터가 없는 경우
     if (selectedStudent && !gradesData[selectedStudent]?.[value]) {
       const newGradesData = { ...gradesData };
-      
+
       if (!newGradesData[selectedStudent]) {
         newGradesData[selectedStudent] = {};
       }
-      
+
       newGradesData[selectedStudent][value] = {
         subjects: subjects.reduce((acc, subject) => {
           acc[subject.id] = { score: 0, grade: "F" };
@@ -272,12 +289,12 @@ const TeacherGradesPage: React.FC = () => {
           late: 0,
           earlyLeave: 0,
         },
-        comments: ""
+        comments: "",
       };
-      
+
       setGradesData(newGradesData);
     }
-    
+
     // 코멘트 업데이트
     if (selectedStudent && gradesData[selectedStudent]?.[value]) {
       setComments(gradesData[selectedStudent][value].comments || "");
@@ -292,18 +309,18 @@ const TeacherGradesPage: React.FC = () => {
       message.warning("먼저 학생을 선택해주세요.");
       return;
     }
-    
+
     setIsEditing(true);
-    
+
     const currentData = gradesData[selectedStudent]?.[selectedSemester];
     if (currentData) {
       // 편집용 임시 데이터 생성
       setEditedData({
         subjects: { ...currentData.subjects },
         attendance: { ...currentData.attendance },
-        comments: currentData.comments
+        comments: currentData.comments,
       });
-      
+
       setComments(currentData.comments || "");
     }
   };
@@ -311,33 +328,41 @@ const TeacherGradesPage: React.FC = () => {
   // 성적 저장
   const handleSaveGrades = () => {
     if (!selectedStudent) return;
-    
+
     // 총점, 평균, 등급 계산
     const subjectScores = Object.entries(editedData.subjects || {}).map(
       ([subjectId, data]) => {
-        const subject = subjects.find(s => s.id === parseInt(subjectId));
+        const subject = subjects.find((s) => s.id === parseInt(subjectId));
         const score = (data as { score: number }).score;
-        
+
         return {
           subjectId: parseInt(subjectId),
           score,
           maxScore: subject ? subject.maxScore : 100,
-          grade: calculateGrade(score, subject ? subject.maxScore : 100)
+          grade: calculateGrade(score, subject ? subject.maxScore : 100),
         };
       }
     );
-    
-    const totalScore = subjectScores.reduce((sum, subject) => sum + subject.score, 0);
-    const totalMaxScore = subjectScores.reduce((sum, subject) => sum + subject.maxScore, 0);
-    const averageScore = parseFloat((totalScore / subjectScores.length).toFixed(1));
-    
+
+    const totalScore = subjectScores.reduce(
+      (sum, subject) => sum + subject.score,
+      0
+    );
+    const totalMaxScore = subjectScores.reduce(
+      (sum, subject) => sum + subject.maxScore,
+      0
+    );
+    const averageScore = parseFloat(
+      (totalScore / subjectScores.length).toFixed(1)
+    );
+
     // 새로운 성적 데이터 업데이트
     const newGradesData = { ...gradesData };
-    
+
     if (!newGradesData[selectedStudent]) {
       newGradesData[selectedStudent] = {};
     }
-    
+
     if (!newGradesData[selectedStudent][selectedSemester]) {
       newGradesData[selectedStudent][selectedSemester] = {
         subjects: {},
@@ -351,34 +376,38 @@ const TeacherGradesPage: React.FC = () => {
           late: 0,
           earlyLeave: 0,
         },
-        comments: ""
+        comments: "",
       };
     }
-    
+
     // 과목별 성적 업데이트
-    subjectScores.forEach(subject => {
-      newGradesData[selectedStudent][selectedSemester].subjects[subject.subjectId] = {
+    subjectScores.forEach((subject) => {
+      newGradesData[selectedStudent][selectedSemester].subjects[
+        subject.subjectId
+      ] = {
         score: subject.score,
-        grade: subject.grade
+        grade: subject.grade,
       };
     });
-    
+
     // 출결 및 코멘트 업데이트
-    newGradesData[selectedStudent][selectedSemester].attendance = editedData.attendance || {
-      present: 0,
-      absent: 0,
-      late: 0,
-      earlyLeave: 0,
-    };
-    
+    newGradesData[selectedStudent][selectedSemester].attendance =
+      editedData.attendance || {
+        present: 0,
+        absent: 0,
+        late: 0,
+        earlyLeave: 0,
+      };
+
     newGradesData[selectedStudent][selectedSemester].comments = comments;
-    
+
     // 총점/평균 업데이트
     newGradesData[selectedStudent][selectedSemester].totalScore = totalScore;
-    newGradesData[selectedStudent][selectedSemester].averageScore = averageScore;
-    
+    newGradesData[selectedStudent][selectedSemester].averageScore =
+      averageScore;
+
     // TODO: 순위 계산 로직 추가 (실제 구현 시 학생 전체의 성적을 비교해야 함)
-    
+
     setGradesData(newGradesData);
     setIsEditing(false);
     message.success("성적이 저장되었습니다.");
@@ -388,7 +417,7 @@ const TeacherGradesPage: React.FC = () => {
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditedData({});
-    
+
     // 코멘트 원래대로 복원
     if (selectedStudent && gradesData[selectedStudent]?.[selectedSemester]) {
       setComments(gradesData[selectedStudent][selectedSemester].comments || "");
@@ -399,13 +428,13 @@ const TeacherGradesPage: React.FC = () => {
   const handleScoreChange = (subjectId, value) => {
     const score = parseInt(value);
     if (isNaN(score)) return;
-    
-    const subject = subjects.find(s => s.id === subjectId);
+
+    const subject = subjects.find((s) => s.id === subjectId);
     if (!subject) return;
-    
+
     // 최대 점수 제한
     const limitedScore = Math.min(Math.max(0, score), subject.maxScore);
-    
+
     setEditedData({
       ...editedData,
       subjects: {
@@ -413,9 +442,9 @@ const TeacherGradesPage: React.FC = () => {
         [subjectId]: {
           ...((editedData.subjects || {})[subjectId] || {}),
           score: limitedScore,
-          grade: calculateGrade(limitedScore, subject.maxScore)
-        }
-      }
+          grade: calculateGrade(limitedScore, subject.maxScore),
+        },
+      },
     });
   };
 
@@ -423,13 +452,13 @@ const TeacherGradesPage: React.FC = () => {
   const handleAttendanceChange = (type, value) => {
     const attendance = parseInt(value);
     if (isNaN(attendance)) return;
-    
+
     setEditedData({
       ...editedData,
       attendance: {
         ...(editedData.attendance || {}),
-        [type]: Math.max(0, attendance)
-      }
+        [type]: Math.max(0, attendance),
+      },
     });
   };
 
@@ -444,28 +473,31 @@ const TeacherGradesPage: React.FC = () => {
       message.warning("먼저 학생을 선택해주세요.");
       return;
     }
-    
+
     setIsModalVisible(true);
   };
 
   // 학생 정보 삭제 처리
   const handleDelete = () => {
     if (!selectedStudent) return;
-    
+
     const newGradesData = { ...gradesData };
-    
+
     if (newGradesData[selectedStudent]) {
-      if (selectedSemester && newGradesData[selectedStudent][selectedSemester]) {
+      if (
+        selectedSemester &&
+        newGradesData[selectedStudent][selectedSemester]
+      ) {
         // 해당 학기 성적만 삭제
         delete newGradesData[selectedStudent][selectedSemester];
-        
+
         // 해당 학생의 학기 성적이 모두 삭제되었으면 학생 정보도 삭제
         if (Object.keys(newGradesData[selectedStudent]).length === 0) {
           delete newGradesData[selectedStudent];
         }
       }
     }
-    
+
     setGradesData(newGradesData);
     setIsModalVisible(false);
     setSelectedStudent(null);
@@ -486,7 +518,8 @@ const TeacherGradesPage: React.FC = () => {
       key: "score",
       render: (text, record) => {
         if (isEditing) {
-          const currentScore = ((editedData.subjects || {})[record.id] || {}).score || 0;
+          const currentScore =
+            ((editedData.subjects || {})[record.id] || {}).score || 0;
           return (
             <Input
               type="number"
@@ -517,18 +550,18 @@ const TeacherGradesPage: React.FC = () => {
     if (!selectedStudent || !gradesData[selectedStudent]?.[selectedSemester]) {
       return [];
     }
-    
+
     const currentGrades = gradesData[selectedStudent][selectedSemester];
-    
-    return subjects.map(subject => {
+
+    return subjects.map((subject) => {
       const subjectData = currentGrades.subjects[subject.id] || { score: 0 };
       const percentage = (subjectData.score / subject.maxScore) * 100;
-      
+
       return {
         subject: subject.name,
         score: subjectData.score,
         fullMark: subject.maxScore,
-        percentage
+        percentage,
       };
     });
   };
@@ -538,19 +571,22 @@ const TeacherGradesPage: React.FC = () => {
     if (!selectedStudent || !gradesData[selectedStudent]?.[selectedSemester]) {
       return [];
     }
-    
+
     const currentGrades = gradesData[selectedStudent][selectedSemester];
-    
-    return subjects.map(subject => {
-      const subjectData = currentGrades.subjects[subject.id] || { score: 0, grade: "F" };
-      
+
+    return subjects.map((subject) => {
+      const subjectData = currentGrades.subjects[subject.id] || {
+        score: 0,
+        grade: "F",
+      };
+
       return {
         key: subject.id,
         id: subject.id,
         subject: subject.name,
         score: subjectData.score,
         maxScore: subject.maxScore,
-        grade: subjectData.grade
+        grade: subjectData.grade,
       };
     });
   };
@@ -560,7 +596,7 @@ const TeacherGradesPage: React.FC = () => {
     if (!selectedStudent || !gradesData[selectedStudent]?.[selectedSemester]) {
       return { present: 0, absent: 0, late: 0, earlyLeave: 0 };
     }
-    
+
     return gradesData[selectedStudent][selectedSemester].attendance;
   };
 
@@ -569,14 +605,14 @@ const TeacherGradesPage: React.FC = () => {
     if (!selectedStudent || !gradesData[selectedStudent]?.[selectedSemester]) {
       return null;
     }
-    
+
     return gradesData[selectedStudent][selectedSemester];
   };
 
   // 선택된 학생 이름 가져오기
   const getSelectedStudentName = () => {
     if (!selectedStudent) return "";
-    const student = students.find(s => s.id === selectedStudent);
+    const student = students.find((s) => s.id === selectedStudent);
     return student ? student.name : "";
   };
 
@@ -592,11 +628,11 @@ const TeacherGradesPage: React.FC = () => {
       userInfo={teacherData.subject}
     >
       <TeacherSidebar isCollapsed={false} />
-      
+
       <ContentContainer>
         <PageContainer>
           <h1>학생 성적 관리</h1>
-          
+
           <ControlsContainer>
             <StyledSelect
               placeholder="학생 선택"
@@ -604,38 +640,39 @@ const TeacherGradesPage: React.FC = () => {
               onChange={handleStudentChange}
               style={{ width: 200 }}
             >
-              {students.map(student => (
+              {students.map((student) => (
                 <Select.Option key={student.id} value={student.id}>
-                  {student.name} ({student.grade}-{student.classNum}-{student.number})
+                  {student.name} ({student.grade}-{student.classNum}-
+                  {student.number})
                 </Select.Option>
               ))}
             </StyledSelect>
-            
+
             <StyledSelect
               placeholder="학기 선택"
               value={selectedSemester}
               onChange={handleSemesterChange}
               style={{ width: 150 }}
             >
-              {semesterOptions.map(option => (
+              {semesterOptions.map((option) => (
                 <Select.Option key={option.value} value={option.value}>
                   {option.label}
                 </Select.Option>
               ))}
             </StyledSelect>
-            
+
             {!isEditing ? (
               <>
-                <ActionButton 
-                  type="primary" 
+                <ActionButton
+                  type="primary"
                   icon={<EditOutlined />}
                   onClick={handleEditStart}
                   disabled={!selectedStudent}
                 >
                   편집
                 </ActionButton>
-                <ActionButton 
-                  danger 
+                <ActionButton
+                  danger
                   icon={<DeleteOutlined />}
                   onClick={showDeleteConfirm}
                   disabled={!selectedStudent}
@@ -645,26 +682,28 @@ const TeacherGradesPage: React.FC = () => {
               </>
             ) : (
               <>
-                <ActionButton 
-                  type="primary" 
+                <ActionButton
+                  type="primary"
                   icon={<SaveOutlined />}
                   onClick={handleSaveGrades}
                 >
                   저장
                 </ActionButton>
-                <ActionButton onClick={handleCancelEdit}>
-                  취소
-                </ActionButton>
+                <ActionButton onClick={handleCancelEdit}>취소</ActionButton>
               </>
             )}
           </ControlsContainer>
-          
+
           {selectedStudent && currentData ? (
             <DashboardCard>
               <CardTitle>
-                {getSelectedStudentName()} 학생 성적 - {semesterOptions.find(s => s.value === selectedSemester)?.label}
+                {getSelectedStudentName()} 학생 성적 -{" "}
+                {
+                  semesterOptions.find((s) => s.value === selectedSemester)
+                    ?.label
+                }
               </CardTitle>
-              
+
               <GradeStatContainer>
                 <GradeStatCard>
                   <StatLabel>총점</StatLabel>
@@ -676,18 +715,31 @@ const TeacherGradesPage: React.FC = () => {
                 </GradeStatCard>
                 <GradeStatCard>
                   <StatLabel>전교 석차</StatLabel>
-                  <StatValue>{currentData.ranking === 0 ? "-" : `${currentData.ranking}등`}</StatValue>
+                  <StatValue>
+                    {currentData.ranking === 0
+                      ? "-"
+                      : `${currentData.ranking}등`}
+                  </StatValue>
                 </GradeStatCard>
                 <GradeStatCard>
                   <StatLabel>반 석차</StatLabel>
-                  <StatValue>{currentData.classRanking === 0 ? "-" : `${currentData.classRanking}등`}</StatValue>
+                  <StatValue>
+                    {currentData.classRanking === 0
+                      ? "-"
+                      : `${currentData.classRanking}등`}
+                  </StatValue>
                 </GradeStatCard>
               </GradeStatContainer>
-              
+
               {/* 레이더 차트 */}
               <ChartContainer>
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
+                  <RadarChart
+                    cx="50%"
+                    cy="50%"
+                    outerRadius="80%"
+                    data={chartData}
+                  >
                     <PolarGrid />
                     <PolarAngleAxis dataKey="subject" />
                     <PolarRadiusAxis angle={30} domain={[0, 100]} />
@@ -701,7 +753,7 @@ const TeacherGradesPage: React.FC = () => {
                   </RadarChart>
                 </ResponsiveContainer>
               </ChartContainer>
-              
+
               {/* 과목별 성적 테이블 */}
               <SubjectsTable
                 columns={columns}
@@ -709,7 +761,7 @@ const TeacherGradesPage: React.FC = () => {
                 pagination={false}
                 size="middle"
               />
-              
+
               {/* 출결 현황 */}
               <CardTitle>출결 현황</CardTitle>
               <GradeStatContainer>
@@ -718,8 +770,13 @@ const TeacherGradesPage: React.FC = () => {
                   {isEditing ? (
                     <Input
                       type="number"
-                      value={(editedData.attendance || {}).present || currentAttendance.present}
-                      onChange={(e) => handleAttendanceChange("present", e.target.value)}
+                      value={
+                        (editedData.attendance || {}).present ||
+                        currentAttendance.present
+                      }
+                      onChange={(e) =>
+                        handleAttendanceChange("present", e.target.value)
+                      }
                       min={0}
                     />
                   ) : (
@@ -731,8 +788,13 @@ const TeacherGradesPage: React.FC = () => {
                   {isEditing ? (
                     <Input
                       type="number"
-                      value={(editedData.attendance || {}).absent || currentAttendance.absent}
-                      onChange={(e) => handleAttendanceChange("absent", e.target.value)}
+                      value={
+                        (editedData.attendance || {}).absent ||
+                        currentAttendance.absent
+                      }
+                      onChange={(e) =>
+                        handleAttendanceChange("absent", e.target.value)
+                      }
                       min={0}
                     />
                   ) : (
@@ -744,8 +806,13 @@ const TeacherGradesPage: React.FC = () => {
                   {isEditing ? (
                     <Input
                       type="number"
-                      value={(editedData.attendance || {}).late || currentAttendance.late}
-                      onChange={(e) => handleAttendanceChange("late", e.target.value)}
+                      value={
+                        (editedData.attendance || {}).late ||
+                        currentAttendance.late
+                      }
+                      onChange={(e) =>
+                        handleAttendanceChange("late", e.target.value)
+                      }
                       min={0}
                     />
                   ) : (
@@ -757,8 +824,13 @@ const TeacherGradesPage: React.FC = () => {
                   {isEditing ? (
                     <Input
                       type="number"
-                      value={(editedData.attendance || {}).earlyLeave || currentAttendance.earlyLeave}
-                      onChange={(e) => handleAttendanceChange("earlyLeave", e.target.value)}
+                      value={
+                        (editedData.attendance || {}).earlyLeave ||
+                        currentAttendance.earlyLeave
+                      }
+                      onChange={(e) =>
+                        handleAttendanceChange("earlyLeave", e.target.value)
+                      }
                       min={0}
                     />
                   ) : (
@@ -766,7 +838,7 @@ const TeacherGradesPage: React.FC = () => {
                   )}
                 </GradeStatCard>
               </GradeStatContainer>
-              
+
               {/* 코멘트 */}
               <CommentsContainer>
                 <CommentsLabel>종합 의견</CommentsLabel>
@@ -779,21 +851,32 @@ const TeacherGradesPage: React.FC = () => {
                     showCount
                   />
                 ) : (
-                  <CommentsValue>{currentData.comments || "의견이 없습니다."}</CommentsValue>
+                  <CommentsValue>
+                    {currentData.comments || "의견이 없습니다."}
+                  </CommentsValue>
                 )}
               </CommentsContainer>
             </DashboardCard>
           ) : (
             <DashboardCard>
-              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "300px" }}>
-                <UserOutlined style={{ fontSize: "24px", marginRight: "10px" }} />
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  minHeight: "300px",
+                }}
+              >
+                <UserOutlined
+                  style={{ fontSize: "24px", marginRight: "10px" }}
+                />
                 <span>학생을 선택하여 성적 정보를 확인하세요.</span>
               </div>
             </DashboardCard>
           )}
         </PageContainer>
       </ContentContainer>
-      
+
       {/* 삭제 확인 모달 */}
       <Modal
         title="성적 정보 삭제"
@@ -804,7 +887,9 @@ const TeacherGradesPage: React.FC = () => {
         cancelText="취소"
       >
         <p>
-          {getSelectedStudentName()} 학생의 {semesterOptions.find(s => s.value === selectedSemester)?.label} 성적 정보를 삭제하시겠습니까?
+          {getSelectedStudentName()} 학생의{" "}
+          {semesterOptions.find((s) => s.value === selectedSemester)?.label}{" "}
+          성적 정보를 삭제하시겠습니까?
         </p>
         <p>이 작업은 취소할 수 없습니다.</p>
       </Modal>

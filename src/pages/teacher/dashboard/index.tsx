@@ -1,14 +1,7 @@
 import DashboardLayout from "../../../components/layout/DashboardLayout";
 import TeacherSidebar from "../../../components/layout/TeacherSidebar";
+import { ContentContainer } from "../../../components/dashboard/DashboardComponents.styles";
 import {
-  DashboardGrid,
-  DashboardCard,
-  CardTitle,
-  ContentContainer,
-} from "../../../components/dashboard/DashboardComponents.styles";
-import {
-  FeedbackContainer,
-  CounselingContainer,
   NotificationContainer,
   NotificationItem,
   NotificationTime,
@@ -18,18 +11,8 @@ import {
 import styled from "@emotion/styled";
 import { colors } from "../../../components/common/Common.styles";
 
-// 컴포넌트 임포트
-import FeedbackItem from "../../../components/dashboard/FeedbackItem";
-import CounselingItem from "../../../components/dashboard/CounselingItem";
-
 // 데이터 임포트
-import {
-  userData,
-  feedbackData,
-  counselingData,
-  FeedbackData,
-  CounselingData,
-} from "../../../constants/dashboard/teacherDashboardData";
+import { userData } from "../../../constants/dashboard/teacherDashboardData";
 
 // 알림 데이터 타입 정의
 interface NotificationData {

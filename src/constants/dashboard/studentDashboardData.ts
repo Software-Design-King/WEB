@@ -2,7 +2,7 @@
 
 // 사용자 정보
 export const userData = {
-  name: "김학생",
+  name: "권도훈",
   role: "학생",
   grade: 2,
   class: 3,
@@ -105,8 +105,7 @@ export const notificationData = [
   {
     id: 1,
     time: "1시간 전",
-    content:
-      "수학 1단원 시험 결과가 등록되었습니다. 성적을 확인해보세요.",
+    content: "수학 1단원 시험 결과가 등록되었습니다. 성적을 확인해보세요.",
     isNew: true,
   },
   {
