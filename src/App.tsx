@@ -7,6 +7,12 @@ const TeacherDashboard = lazy(() => import("./pages/teacher/dashboard"));
 const GradePage = lazy(() => import("./pages/grade"));
 const CounselingPage = lazy(() => import("./pages/counseling"));
 
+// 새로 추가된 페이지 컴포넌트
+const StudentGradesPage = lazy(() => import("./pages/student/grades"));
+const StudentRecordsPage = lazy(() => import("./pages/student/records"));
+const TeacherGradesPage = lazy(() => import("./pages/teacher/grades"));
+const TeacherRecordsPage = lazy(() => import("./pages/teacher/records"));
+
 // 로딩 컴포넌트
 const Loading = () => <div>로딩 중...</div>;
 
@@ -24,6 +30,12 @@ function App() {
           <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
           <Route path="/grade" element={<GradePage />} />
           <Route path="/counseling" element={<CounselingPage />} />
+          
+          {/* 새로 추가된 경로 */}
+          <Route path="/student/grades" element={<StudentGradesPage />} />
+          <Route path="/student/records" element={<StudentRecordsPage />} />
+          <Route path="/teacher/grades" element={<TeacherGradesPage />} />
+          <Route path="/teacher/records" element={<TeacherRecordsPage />} />
         </Routes>
       </Suspense>
     </BrowserRouter>
