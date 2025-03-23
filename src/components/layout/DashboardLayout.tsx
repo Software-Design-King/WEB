@@ -29,6 +29,7 @@ const LayoutContainer = styled.div`
 
 // 상단 헤더
 const Header = styled.header`
+  width: 100vw;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -206,8 +207,12 @@ const MobileOverlay = styled.div<{ isVisible: boolean }>`
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 99;
-  display: ${(props) => (props.isVisible ? "block" : "none")};
+  z-index: 49;
+  display: none;
+
+  @media (max-width: ${breakpoints.tablet}) {
+    display: ${(props) => (props.isVisible ? "block" : "none")};
+  }
 `;
 
 export const DashboardLayout: React.FC<LayoutProps> = ({
@@ -217,11 +222,16 @@ export const DashboardLayout: React.FC<LayoutProps> = ({
   userInfo,
   notificationCount = 0,
 }) => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // 사이드바 토글 함수
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
+    // 모바일에서만 오버레이 표시 상태 변경
+    if (window.innerWidth <= parseInt(breakpoints.tablet)) {
+      setMobileMenuOpen(!mobileMenuOpen);
+    }
   };
 
   // 사용자 이니셜 생성
@@ -240,9 +250,12 @@ export const DashboardLayout: React.FC<LayoutProps> = ({
 
   // 사이드바에 props 전달
   const sidebarWithProps = React.isValidElement(sidebarContent)
-    ? React.cloneElement(sidebarContent as React.ReactElement<{ isCollapsed: boolean }>, {
-        isCollapsed: sidebarCollapsed,
-      })
+    ? React.cloneElement(
+        sidebarContent as React.ReactElement<{ isCollapsed: boolean }>,
+        {
+          isCollapsed: sidebarCollapsed,
+        }
+      )
     : sidebarContent;
 
   return (
@@ -317,7 +330,7 @@ export const DashboardLayout: React.FC<LayoutProps> = ({
           </svg>
         </SidebarToggle>
 
-        <MobileOverlay isVisible={!sidebarCollapsed} onClick={toggleSidebar} />
+        <MobileOverlay isVisible={mobileMenuOpen} onClick={toggleSidebar} />
       </MainContent>
     </LayoutContainer>
   );
