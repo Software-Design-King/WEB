@@ -434,7 +434,6 @@ const StudentRecordsPage: React.FC = () => {
                     <TableHeaderCell>날짜</TableHeaderCell>
                     <TableHeaderCell>유형</TableHeaderCell>
                     <TableHeaderCell>사유</TableHeaderCell>
-                    <TableHeaderCell>설명</TableHeaderCell>
                   </tr>
                 </TableHeader>
                 <TableBody>
@@ -449,7 +448,6 @@ const StudentRecordsPage: React.FC = () => {
                         </StatusBadge>
                       </TableCell>
                       <TableCell>{record.reason}</TableCell>
-                      <TableCell>{record.description}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

@@ -56,9 +56,9 @@ const studentInfoData = {
       earlyLeaveDays: 1,
       sickLeaveDays: 2,
       details: [
-        { date: "2024-03-15", type: "absent", reason: "병결", description: "감기로 인한 결석" },
-        { date: "2024-04-22", type: "late", reason: "교통 지연", description: "버스 지연으로 인한 지각" },
-        { date: "2024-05-08", type: "late", reason: "기타", description: "교문 통과 후 지각" },
+        { date: "2024-03-15", type: "absent", reason: "병결" },
+        { date: "2024-04-22", type: "late", reason: "교통 지연" },
+        { date: "2024-05-08", type: "late", reason: "기타" },
       ],
     },
     behavioral: [
@@ -339,9 +339,6 @@ const TeacherRecordsPage: React.FC = () => {
             <FormItem name="reason" label="사유" rules={[{ required: true }]}>
               <Input />
             </FormItem>
-            <FormItem name="description" label="설명">
-              <TextArea rows={4} />
-            </FormItem>
           </Form>
         );
       
@@ -490,11 +487,6 @@ const TeacherRecordsPage: React.FC = () => {
               <RecordActions>
                 <Button 
                   type="text" 
-                  icon={<EditOutlined />} 
-                  onClick={() => showEditModal("attendance", record)}
-                />
-                <Button 
-                  type="text" 
                   danger 
                   icon={<DeleteOutlined />} 
                   onClick={() => handleDeleteRecord("attendance", index)}
@@ -516,7 +508,6 @@ const TeacherRecordsPage: React.FC = () => {
                 </StatusBadge>
                 <span style={{ marginLeft: '0.5rem' }}>{record.reason}</span>
               </div>
-              <div>{record.description}</div>
             </RecordItem>
           ))}
         </RecordsList>
