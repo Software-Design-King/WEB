@@ -1,6 +1,13 @@
 import React, { useState } from "react";
 import styled from "@emotion/styled";
-import { Select, Table, Input, Button, Modal, message } from "antd";
+import {
+  Select,
+  Table,
+  Input,
+  Button,
+  Modal,
+  message,
+} from "antd";
 import {
   EditOutlined,
   DeleteOutlined,
@@ -78,10 +85,6 @@ const initialGradesData = {
         7: { score: 42, grade: "B" }, // 미술
         8: { score: 48, grade: "A" }, // 체육
       },
-      totalScore: 573,
-      averageScore: 88.1,
-      ranking: 3,
-      classRanking: 2,
       attendance: {
         present: 92,
         absent: 2,
@@ -95,7 +98,7 @@ const initialGradesData = {
 };
 
 // 등급 계산 함수
-const calculateGrade = (score, maxScore) => {
+const calculateGrade = (score: number, maxScore: number) => {
   const percentage = (score / maxScore) * 100;
 
   if (percentage >= 90) return "A";
@@ -104,6 +107,46 @@ const calculateGrade = (score, maxScore) => {
   if (percentage >= 60) return "D";
   return "F";
 };
+
+// Define interfaces for our data structures
+interface SubjectGrade {
+  score: number;
+  grade: string;
+}
+
+interface AttendanceData {
+  present: number;
+  absent: number;
+  late: number;
+  earlyLeave: number;
+}
+
+interface SemesterData {
+  subjects: Record<number, SubjectGrade>;
+  attendance: AttendanceData;
+  comments: string;
+}
+
+interface StudentGradeData {
+  [studentId: number]: {
+    [semester: string]: SemesterData;
+  };
+}
+
+interface EditedData {
+  subjects?: Record<number, SubjectGrade>;
+  attendance?: AttendanceData;
+  comments?: string;
+}
+
+interface TableRecord {
+  key: number;
+  id: number;
+  subject: string;
+  score: number;
+  maxScore: number;
+  grade: string;
+}
 
 // 스타일 컴포넌트
 const PageContainer = styled.div`
@@ -202,45 +245,36 @@ const StyledTextArea = styled(Input.TextArea)`
   min-height: 100px;
 `;
 
-const ButtonContainer = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 1rem;
-`;
-
 const TeacherGradesPage: React.FC = () => {
   const [selectedStudent, setSelectedStudent] = useState<number | null>(null);
   const [selectedSemester, setSelectedSemester] = useState(
     semesterOptions[3].value
   ); // 기본값: 2학년 2학기
-  const [gradesData, setGradesData] = useState(initialGradesData);
+  const [gradesData, setGradesData] = useState<StudentGradeData>(initialGradesData);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedData, setEditedData] = useState({});
+  const [editedData, setEditedData] = useState<EditedData>({});
   const [comments, setComments] = useState("");
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   // 학생 선택 핸들러
-  const handleStudentChange = (value) => {
-    setSelectedStudent(value);
+  const handleStudentChange = (value: unknown) => {
+    const studentId = value as number;
+    setSelectedStudent(studentId);
     setIsEditing(false);
 
     // 선택된 학생의 특정 학기 성적이 없을 경우 빈 데이터 생성
-    if (value && !gradesData[value]?.[selectedSemester]) {
+    if (studentId && !gradesData[studentId]?.[selectedSemester]) {
       const newGradesData = { ...gradesData };
 
-      if (!newGradesData[value]) {
-        newGradesData[value] = {};
+      if (!newGradesData[studentId]) {
+        newGradesData[studentId] = {};
       }
 
-      newGradesData[value][selectedSemester] = {
+      newGradesData[studentId][selectedSemester] = {
         subjects: subjects.reduce((acc, subject) => {
           acc[subject.id] = { score: 0, grade: "F" };
           return acc;
-        }, {}),
-        totalScore: 0,
-        averageScore: 0,
-        ranking: 0,
-        classRanking: 0,
+        }, {} as Record<number, SubjectGrade>),
         attendance: {
           present: 0,
           absent: 0,
@@ -254,35 +288,32 @@ const TeacherGradesPage: React.FC = () => {
     }
 
     // 코멘트 업데이트
-    if (value && gradesData[value]?.[selectedSemester]) {
-      setComments(gradesData[value][selectedSemester].comments || "");
+    if (studentId && gradesData[studentId]?.[selectedSemester]) {
+      setComments(gradesData[studentId][selectedSemester].comments || "");
     } else {
       setComments("");
     }
   };
 
   // 학기 선택 핸들러
-  const handleSemesterChange = (value) => {
-    setSelectedSemester(value);
+  const handleSemesterChange = (value: unknown) => {
+    const semester = value as string;
+    setSelectedSemester(semester);
     setIsEditing(false);
 
     // 학생이 선택되어 있고, 해당 학기 데이터가 없는 경우
-    if (selectedStudent && !gradesData[selectedStudent]?.[value]) {
+    if (selectedStudent && !gradesData[selectedStudent]?.[semester]) {
       const newGradesData = { ...gradesData };
 
       if (!newGradesData[selectedStudent]) {
         newGradesData[selectedStudent] = {};
       }
 
-      newGradesData[selectedStudent][value] = {
+      newGradesData[selectedStudent][semester] = {
         subjects: subjects.reduce((acc, subject) => {
           acc[subject.id] = { score: 0, grade: "F" };
           return acc;
-        }, {}),
-        totalScore: 0,
-        averageScore: 0,
-        ranking: 0,
-        classRanking: 0,
+        }, {} as Record<number, SubjectGrade>),
         attendance: {
           present: 0,
           absent: 0,
@@ -296,8 +327,8 @@ const TeacherGradesPage: React.FC = () => {
     }
 
     // 코멘트 업데이트
-    if (selectedStudent && gradesData[selectedStudent]?.[value]) {
-      setComments(gradesData[selectedStudent][value].comments || "");
+    if (selectedStudent && gradesData[selectedStudent]?.[semester]) {
+      setComments(gradesData[selectedStudent][semester].comments || "");
     } else {
       setComments("");
     }
@@ -329,11 +360,11 @@ const TeacherGradesPage: React.FC = () => {
   const handleSaveGrades = () => {
     if (!selectedStudent) return;
 
-    // 총점, 평균, 등급 계산
+    // 등급 계산
     const subjectScores = Object.entries(editedData.subjects || {}).map(
       ([subjectId, data]) => {
         const subject = subjects.find((s) => s.id === parseInt(subjectId));
-        const score = (data as { score: number }).score;
+        const score = data.score;
 
         return {
           subjectId: parseInt(subjectId),
@@ -342,18 +373,6 @@ const TeacherGradesPage: React.FC = () => {
           grade: calculateGrade(score, subject ? subject.maxScore : 100),
         };
       }
-    );
-
-    const totalScore = subjectScores.reduce(
-      (sum, subject) => sum + subject.score,
-      0
-    );
-    const totalMaxScore = subjectScores.reduce(
-      (sum, subject) => sum + subject.maxScore,
-      0
-    );
-    const averageScore = parseFloat(
-      (totalScore / subjectScores.length).toFixed(1)
     );
 
     // 새로운 성적 데이터 업데이트
@@ -366,10 +385,6 @@ const TeacherGradesPage: React.FC = () => {
     if (!newGradesData[selectedStudent][selectedSemester]) {
       newGradesData[selectedStudent][selectedSemester] = {
         subjects: {},
-        totalScore: 0,
-        averageScore: 0,
-        ranking: 0,
-        classRanking: 0,
         attendance: {
           present: 0,
           absent: 0,
@@ -401,13 +416,6 @@ const TeacherGradesPage: React.FC = () => {
 
     newGradesData[selectedStudent][selectedSemester].comments = comments;
 
-    // 총점/평균 업데이트
-    newGradesData[selectedStudent][selectedSemester].totalScore = totalScore;
-    newGradesData[selectedStudent][selectedSemester].averageScore =
-      averageScore;
-
-    // TODO: 순위 계산 로직 추가 (실제 구현 시 학생 전체의 성적을 비교해야 함)
-
     setGradesData(newGradesData);
     setIsEditing(false);
     message.success("성적이 저장되었습니다.");
@@ -425,7 +433,7 @@ const TeacherGradesPage: React.FC = () => {
   };
 
   // 성적 수정 핸들러
-  const handleScoreChange = (subjectId, value) => {
+  const handleScoreChange = (subjectId: number, value: string) => {
     const score = parseInt(value);
     if (isNaN(score)) return;
 
@@ -448,22 +456,27 @@ const TeacherGradesPage: React.FC = () => {
     });
   };
 
-  // 출결 수정 핸들러
-  const handleAttendanceChange = (type, value) => {
+  // 출석 데이터 변경 핸들러
+  const handleAttendanceChange = (type: string, value: string) => {
     const attendance = parseInt(value);
     if (isNaN(attendance)) return;
 
     setEditedData({
       ...editedData,
       attendance: {
-        ...(editedData.attendance || {}),
+        ...(editedData.attendance || {
+          present: 0,
+          absent: 0,
+          late: 0,
+          earlyLeave: 0,
+        }),
         [type]: Math.max(0, attendance),
       },
     });
   };
 
   // 코멘트 수정 핸들러
-  const handleCommentsChange = (e) => {
+  const handleCommentsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setComments(e.target.value);
   };
 
@@ -506,7 +519,10 @@ const TeacherGradesPage: React.FC = () => {
   };
 
   // 성적 테이블 컬럼 설정
-  const columns = [
+  // TODO: Using 'any' type temporarily to resolve TypeScript compatibility issues with Ant Design Table
+  // A more type-safe approach would be to use proper types from Ant Design, but this requires
+  // complex generic type handling that's beyond the scope of the current refactoring
+  const columns: any = [
     {
       title: "과목",
       dataIndex: "subject",
@@ -516,7 +532,8 @@ const TeacherGradesPage: React.FC = () => {
       title: "점수",
       dataIndex: "score",
       key: "score",
-      render: (text, record) => {
+      render: (text: number, record: any) => {
+        // Using 'any' for record type due to TypeScript compatibility issues with Ant Design Table
         if (isEditing) {
           const currentScore =
             ((editedData.subjects || {})[record.id] || {}).score || 0;
@@ -587,7 +604,7 @@ const TeacherGradesPage: React.FC = () => {
         score: subjectData.score,
         maxScore: subject.maxScore,
         grade: subjectData.grade,
-      };
+      } as TableRecord;
     });
   };
 
@@ -703,33 +720,6 @@ const TeacherGradesPage: React.FC = () => {
                     ?.label
                 }
               </CardTitle>
-
-              <GradeStatContainer>
-                <GradeStatCard>
-                  <StatLabel>총점</StatLabel>
-                  <StatValue>{currentData.totalScore}</StatValue>
-                </GradeStatCard>
-                <GradeStatCard>
-                  <StatLabel>평균</StatLabel>
-                  <StatValue>{currentData.averageScore}</StatValue>
-                </GradeStatCard>
-                <GradeStatCard>
-                  <StatLabel>전교 석차</StatLabel>
-                  <StatValue>
-                    {currentData.ranking === 0
-                      ? "-"
-                      : `${currentData.ranking}등`}
-                  </StatValue>
-                </GradeStatCard>
-                <GradeStatCard>
-                  <StatLabel>반 석차</StatLabel>
-                  <StatValue>
-                    {currentData.classRanking === 0
-                      ? "-"
-                      : `${currentData.classRanking}등`}
-                  </StatValue>
-                </GradeStatCard>
-              </GradeStatContainer>
 
               {/* 레이더 차트 */}
               <ChartContainer>

@@ -34,8 +34,6 @@ interface GradeData {
   subject: string;
   score: number;
   grade: string;
-  average: number;
-  teacher: string;
   semester: string;
 }
 
@@ -44,80 +42,60 @@ const gradesData: GradeData[] = [
     subject: "국어",
     score: 92,
     grade: "A",
-    average: 84.5,
-    teacher: "이지원",
     semester: "2025-1학기",
   },
   {
     subject: "수학",
     score: 88,
     grade: "B+",
-    average: 82.1,
-    teacher: "박준호",
     semester: "2025-1학기",
   },
   {
     subject: "영어",
     score: 95,
     grade: "A+",
-    average: 87.3,
-    teacher: "김수진",
     semester: "2025-1학기",
   },
   {
     subject: "과학",
     score: 90,
     grade: "A",
-    average: 81.8,
-    teacher: "정민석",
     semester: "2025-1학기",
   },
   {
     subject: "사회",
     score: 87,
     grade: "B+",
-    average: 83.2,
-    teacher: "한지연",
     semester: "2025-1학기",
   },
   {
     subject: "국어",
     score: 85,
     grade: "B+",
-    average: 82.5,
-    teacher: "이지원",
     semester: "2024-2학기",
   },
   {
     subject: "수학",
     score: 78,
     grade: "C+",
-    average: 80.1,
-    teacher: "박준호",
     semester: "2024-2학기",
   },
   {
     subject: "영어",
     score: 92,
     grade: "A",
-    average: 85.3,
-    teacher: "김수진",
     semester: "2024-2학기",
   },
   {
     subject: "과학",
     score: 88,
     grade: "B+",
-    average: 83.8,
-    teacher: "정민석",
     semester: "2024-2학기",
   },
   {
     subject: "사회",
     score: 80,
     grade: "B",
-    average: 81.2,
-    teacher: "한지연",
     semester: "2024-2학기",
   },
 ];
@@ -156,38 +134,6 @@ const SemesterSelect = styled.select`
     outline: none;
     border-color: ${colors.primary.main};
   }
-`;
-
-const GradesSummary = styled.div`
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  
-  @media (max-width: 768px) {
-    flex-direction: column;
-  }
-`;
-
-const SummaryCard = styled.div`
-  background-color: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  flex: 1;
-  text-align: center;
-`;
-
-const SummaryLabel = styled.div`
-  font-size: 0.875rem;
-  color: ${colors.text.secondary};
-  margin-bottom: 0.5rem;
-`;
-
-const SummaryValue = styled.div`
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: ${colors.text.primary};
 `;
 
 const GradesTable = styled.div`
@@ -251,14 +197,6 @@ const GradeIndicator = styled.span<{ grade: string }>`
   }};
 `;
 
-const ComparisonIndicator = styled.div<{ value: number }>`
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  color: ${(props) => (props.value >= 0 ? colors.success.main : colors.error.main)};
-  font-size: 0.875rem;
-`;
-
 const ChartContainer = styled.div`
   height: 350px;
   margin-top: 1rem;
@@ -272,26 +210,10 @@ const StudentGradesPage: React.FC = () => {
     (grade) => grade.semester === selectedSemester
   );
   
-  // 성적 평균 계산
-  const averageScore = filteredGrades.length > 0
-    ? filteredGrades.reduce((sum, grade) => sum + grade.score, 0) / filteredGrades.length
-    : 0;
-  
-  // 최고 점수 과목 찾기
-  const highestSubject = filteredGrades.length > 0
-    ? filteredGrades.reduce((prev, current) => (prev.score > current.score) ? prev : current)
-    : null;
-  
-  // 최저 점수 과목 찾기
-  const lowestSubject = filteredGrades.length > 0
-    ? filteredGrades.reduce((prev, current) => (prev.score < current.score) ? prev : current)
-    : null;
-  
   // 차트 데이터 생성
   const chartData = filteredGrades.map((grade) => ({
     subject: grade.subject,
     '내 점수': grade.score,
-    '평균': grade.average,
     fullMark: 100,
   }));
 
@@ -321,27 +243,6 @@ const StudentGradesPage: React.FC = () => {
             </SemesterSelect>
           </SemesterSelector>
           
-          <GradesSummary>
-            <SummaryCard>
-              <SummaryLabel>평균 점수</SummaryLabel>
-              <SummaryValue>{averageScore.toFixed(1)}</SummaryValue>
-            </SummaryCard>
-            
-            <SummaryCard>
-              <SummaryLabel>최고 점수 과목</SummaryLabel>
-              <SummaryValue>
-                {highestSubject ? `${highestSubject.subject} (${highestSubject.score}점)` : '-'}
-              </SummaryValue>
-            </SummaryCard>
-            
-            <SummaryCard>
-              <SummaryLabel>최저 점수 과목</SummaryLabel>
-              <SummaryValue>
-                {lowestSubject ? `${lowestSubject.subject} (${lowestSubject.score}점)` : '-'}
-              </SummaryValue>
-            </SummaryCard>
-          </GradesSummary>
-          
           <DashboardGrid>
             <DashboardCard gridColumn="span 8">
               <CardTitle>성적 목록</CardTitle>
@@ -352,8 +253,6 @@ const StudentGradesPage: React.FC = () => {
                       <TableHeaderCell>과목</TableHeaderCell>
                       <TableHeaderCell>점수</TableHeaderCell>
                       <TableHeaderCell>등급</TableHeaderCell>
-                      <TableHeaderCell>평균 대비</TableHeaderCell>
-                      <TableHeaderCell>담당 교사</TableHeaderCell>
                     </tr>
                   </TableHeader>
                   <TableBody>
@@ -364,26 +263,6 @@ const StudentGradesPage: React.FC = () => {
                         <TableCell>
                           <GradeIndicator grade={grade.grade}>{grade.grade}</GradeIndicator>
                         </TableCell>
-                        <TableCell>
-                          <ComparisonIndicator value={grade.score - grade.average}>
-                            {grade.score > grade.average ? (
-                              <>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                  <path d="M7 14l5-5 5 5H7z" fill="currentColor" />
-                                </svg>
-                                +{(grade.score - grade.average).toFixed(1)}
-                              </>
-                            ) : (
-                              <>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                  <path d="M7 10l5 5 5-5H7z" fill="currentColor" />
-                                </svg>
-                                {(grade.score - grade.average).toFixed(1)}
-                              </>
-                            )}
-                          </ComparisonIndicator>
-                        </TableCell>
-                        <TableCell>{grade.teacher}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -405,13 +284,6 @@ const StudentGradesPage: React.FC = () => {
                       stroke={colors.primary.main}
                       fill={colors.primary.main}
                       fillOpacity={0.6}
-                    />
-                    <Radar
-                      name="평균"
-                      dataKey="평균"
-                      stroke={colors.grey[500]}
-                      fill={colors.grey[500]}
-                      fillOpacity={0.3}
                     />
                   </RadarChart>
                 </ResponsiveContainer>
