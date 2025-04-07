@@ -24,6 +24,9 @@ const USER_ROLES = [
 
 interface FormValues {
   name: string;
+  age?: string;
+  address?: string;
+  gender?: string;
   grade?: string;
   class?: string;
   number?: string;
@@ -48,6 +51,9 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSubmit }) 
   const [selectedRole, setSelectedRole] = useState("student");
   const [signupFormData, setSignupFormData] = useState({
     name: "",
+    age: "",
+    address: "",
+    gender: "",
     grade: "",
     class: "",
     number: "",
@@ -61,7 +67,6 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSubmit }) 
     { name: "", grade: "", class: "", number: "" },
   ]);
   const [parentContact, setParentContact] = useState("");
-  const [relationship, setRelationship] = useState("부모");
 
   const handleHomeroomChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSignupFormData({
@@ -89,7 +94,6 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSubmit }) 
       ...data,
       children,
       parentContact,
-      relationship,
     });
   };
 
@@ -131,6 +135,36 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSubmit }) 
             {errors.name && (
               <FormErrorText>이름을 입력해주세요.</FormErrorText>
             )}
+          </FormField>
+
+          <FormField>
+            <FormLabel htmlFor="age">나이</FormLabel>
+            <FormInput
+              id="age"
+              {...register("age")}
+              placeholder="나이를 입력하세요"
+            />
+          </FormField>
+
+          <FormField>
+            <FormLabel htmlFor="address">주소</FormLabel>
+            <FormInput
+              id="address"
+              {...register("address")}
+              placeholder="주소를 입력하세요"
+            />
+          </FormField>
+
+          <FormField>
+            <FormLabel htmlFor="gender">성별</FormLabel>
+            <FormSelect
+              id="gender"
+              {...register("gender")}
+            >
+              <option value="">선택</option>
+              <option value="male">남성</option>
+              <option value="female">여성</option>
+            </FormSelect>
           </FormField>
 
           {selectedRole === "student" && (
@@ -289,20 +323,6 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSubmit }) 
                 자녀 추가
               </ModalButton>
               <FormField>
-                <FormLabel htmlFor="relationship">
-                  자녀와의 관계
-                </FormLabel>
-                <FormSelect
-                  id="relationship"
-                  value={relationship}
-                  onChange={(e) => setRelationship(e.target.value)}
-                >
-                  <option value="부모">부모</option>
-                  <option value="보호자">보호자</option>
-                  <option value="기타">기타</option>
-                </FormSelect>
-              </FormField>
-              <FormField>
                 <FormLabel htmlFor="parentContact">연락처</FormLabel>
                 <FormInput
                   id="parentContact"
@@ -327,6 +347,37 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, onSubmit }) 
                   <FormErrorText>담당 과목을 입력해주세요.</FormErrorText>
                 )}
               </FormField>
+
+              <div>
+                <FormField>
+                  <FormLabel htmlFor="teacher-grade">학년</FormLabel>
+                  <FormSelect
+                    id="teacher-grade"
+                    {...register("grade")}
+                    defaultValue=""
+                  >
+                    <option value="">학년</option>
+                    <option value="1">1학년</option>
+                    <option value="2">2학년</option>
+                    <option value="3">3학년</option>
+                  </FormSelect>
+                </FormField>
+                <FormField>
+                  <FormLabel htmlFor="teacher-class">반</FormLabel>
+                  <FormSelect
+                    id="teacher-class"
+                    {...register("class")}
+                    defaultValue=""
+                  >
+                    <option value="">반</option>
+                    {[...Array(10)].map((_, index) => (
+                      <option key={index + 1} value={index + 1}>
+                        {index + 1}반
+                      </option>
+                    ))}
+                  </FormSelect>
+                </FormField>
+              </div>
 
               <FormField>
                 <div
