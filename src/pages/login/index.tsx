@@ -48,6 +48,11 @@ interface FormData {
   homeroomGrade?: string;
   homeroomClass?: string;
   role?: string;
+  birthDate?: string;
+  address?: string;
+  contact?: string;
+  parentName?: string;
+  parentContact?: string;
 }
 
 // 자녀 정보 인터페이스 정의
@@ -245,6 +250,61 @@ const LoginPage: React.FC = () => {
                       </FormSelect>
                       {errors.number && (
                         <FormErrorText>번호를 선택해주세요.</FormErrorText>
+                      )}
+                    </FormField>
+                    <FormField>
+                      <FormLabel htmlFor="birthDate">생년월일</FormLabel>
+                      <FormInput
+                        id="birthDate"
+                        type="date"
+                        {...register("birthDate", { required: true })}
+                      />
+                      {errors.birthDate && (
+                        <FormErrorText>생년월일을 입력해주세요.</FormErrorText>
+                      )}
+                    </FormField>
+                    <FormField>
+                      <FormLabel htmlFor="address">주소</FormLabel>
+                      <FormInput
+                        id="address"
+                        {...register("address", { required: true })}
+                        placeholder="주소를 입력하세요"
+                      />
+                      {errors.address && (
+                        <FormErrorText>주소를 입력해주세요.</FormErrorText>
+                      )}
+                    </FormField>
+                    <FormField>
+                      <FormLabel htmlFor="contact">연락처</FormLabel>
+                      <FormInput
+                        id="contact"
+                        {...register("contact", { required: true })}
+                        placeholder="연락처를 입력하세요"
+                      />
+                      {errors.contact && (
+                        <FormErrorText>연락처를 입력해주세요.</FormErrorText>
+                      )}
+                    </FormField>
+                    <FormField>
+                      <FormLabel htmlFor="parentName">보호자 이름</FormLabel>
+                      <FormInput
+                        id="parentName"
+                        {...register("parentName", { required: true })}
+                        placeholder="보호자 이름을 입력하세요"
+                      />
+                      {errors.parentName && (
+                        <FormErrorText>보호자 이름을 입력해주세요.</FormErrorText>
+                      )}
+                    </FormField>
+                    <FormField>
+                      <FormLabel htmlFor="parentContact">보호자 연락처</FormLabel>
+                      <FormInput
+                        id="parentContact"
+                        {...register("parentContact", { required: true })}
+                        placeholder="보호자 연락처를 입력하세요"
+                      />
+                      {errors.parentContact && (
+                        <FormErrorText>보호자 연락처를 입력해주세요.</FormErrorText>
                       )}
                     </FormField>
                   </div>
