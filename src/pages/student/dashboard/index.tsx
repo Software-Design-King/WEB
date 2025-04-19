@@ -1,31 +1,16 @@
 import DashboardLayout from "../../../components/layout/DashboardLayout";
 import StudentSidebar from "../../../components/layout/StudentSidebar";
-import {
-  DashboardGrid,
-  DashboardCard,
-  CardTitle,
-  ContentContainer,
-} from "../../../components/dashboard/DashboardComponents.styles";
-import {
-  FeedbackContainer,
-  CounselingContainer,
-  NotificationContainer,
-} from "./styles/StudentDashboard.styles";
+import { ContentContainer } from "../../../components/dashboard/DashboardComponents.styles";
+import { NotificationContainer } from "./styles/StudentDashboard.styles";
 import styled from "@emotion/styled";
 import { colors } from "../../../components/common/Common.styles";
-
-// 컴포넌트 임포트
-import FeedbackItem from "../../../components/dashboard/FeedbackItem";
-import CounselingItem from "../../../components/dashboard/CounselingItem";
-import NotificationItem from "../../../components/dashboard/NotificationItem";
+import { useUserStore } from "../../../stores/userStore";
 
 // 데이터 임포트
-import {
-  userData,
-  feedbackData,
-  counselingData,
-  notificationData,
-} from "../../../constants/dashboard/studentDashboardData";
+import { notificationData } from "../../../constants/dashboard/studentDashboardData";
+
+// 필요한 컴포넌트 임포트 (실제 사용하는 것만 유지)
+import NotificationItem from "../../../components/dashboard/NotificationItem";
 
 // 대시보드 그리드 컨테이너 - 2x2 그리드 레이아웃을 위한 컴포넌트
 const DashboardGridContainer = styled.div`
@@ -114,11 +99,27 @@ const NavDescription = styled.p`
 
 // 학생 대시보드 컴포넌트
 const StudentDashboard = () => {
+  // Zustand로부터 사용자 정보 가져오기
+  const { userInfo } = useUserStore();
+
+  // 사용자 정보 파싱 - roleInfo에서 학년, 반 정보 추출
+  const roleInfoParts = userInfo?.roleInfo
+    ? userInfo.roleInfo.match(/(\d+)학년\s*(\d+)반/)
+    : null;
+  const grade = roleInfoParts ? roleInfoParts[1] : "";
+  const classNum = roleInfoParts ? roleInfoParts[2] : "";
+
   return (
     <DashboardLayout
-      userName={userData.name}
-      userRole={userData.role}
-      userInfo={`${userData.grade}학년 ${userData.class}반 ${userData.number}번`}
+      userName={userInfo?.name || "사용자"}
+      userRole={
+        userInfo?.userType == "STUDENT"
+          ? "학생"
+          : userInfo?.userType == "PARENT"
+          ? "학부모"
+          : "학생"
+      }
+      userInfo={userInfo?.roleInfo || ""}
       notificationCount={2}
     >
       <StudentSidebar isCollapsed={false} />
@@ -189,7 +190,6 @@ const StudentDashboard = () => {
             ))}
           </NotificationContainer>
         </AlertCenterContainer>
-        <DashboardGrid></DashboardGrid>
       </ContentContainer>
     </DashboardLayout>
   );
