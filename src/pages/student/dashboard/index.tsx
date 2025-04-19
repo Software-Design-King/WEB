@@ -164,7 +164,7 @@ const StudentDashboard = () => {
 
           {/* 상담내역 관리 */}
           <NavigationCard
-            onClick={() => (window.location.href = "/student/counseling")}
+            onClick={() => (window.location.href = "/student/consultation")}
           >
             <NavIcon>🤝</NavIcon>
             <NavTitle>상담내역 관리</NavTitle>

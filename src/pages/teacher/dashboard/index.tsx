@@ -186,7 +186,7 @@ const TeacherDashboard = () => {
 
           {/* 상담내역 관리 */}
           <NavigationCard
-            onClick={() => (window.location.href = "/teacher/counseling")}
+            onClick={() => (window.location.href = "/teacher/consultation")}
           >
             <NavIcon>🤝</NavIcon>
             <NavTitle>상담내역 관리</NavTitle>
