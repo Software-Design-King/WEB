@@ -54,3 +54,6 @@ coverage
 .DS_Store
 Thumbs.db
 *.pem
+
+# code file
+_archived
