@@ -111,6 +111,20 @@ export const FormErrorText = styled.div`
   margin-top: 0.25rem;
 `;
 
+export const ErrorMessage = styled.div`
+  background-color: #ffebee;
+  border-left: 4px solid #f44336;
+  color: #d32f2f;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-radius: 4px;
+  
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+`;
+
 export const SubmitButton = styled.button`
   width: 100%;
   padding: 0.75rem;
