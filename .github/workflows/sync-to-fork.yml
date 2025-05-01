@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source (org repo)
+      - name: Checkout source (org repo)https://github.com/settings/personal-access-tokens/new
         uses: actions/checkout@v4
 
       - name: Set up Git identity
