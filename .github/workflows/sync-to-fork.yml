@@ -1,0 +1,24 @@
+name: Sync to Personal Fork
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source (org repo)
+        uses: actions/checkout@v4
+
+      - name: Set up Git identity
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Push to personal fork
+        run: |
+          git remote add fork https://x-access-token:${{ secrets.PERSONAL_REPO_TOKEN }}@github.com/Kwon2do/software_WEB.git
+          git push fork main --force
