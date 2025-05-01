@@ -1,5 +1,79 @@
 import styled from "@emotion/styled";
-import { colors, typography } from "../../../components/common/Common.styles";
+import { colors } from "../../../components/common/Common.styles";
+
+export const LoginContainer = styled.div`
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    padding: 1rem;
+  }
+`;
+
+export const WaveBackground = styled.div`
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffffff' fill-opacity='0.3' d='M0,192L48,176C96,160,192,128,288,117.3C384,107,480,117,576,144C672,171,768,213,864,208C960,203,1056,149,1152,138.7C1248,128,1344,160,1392,176L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
+  background-size: cover;
+  background-position: bottom;
+  z-index: 0;
+`;
+
+export const CardContainer = styled.div`
+  display: flex;
+  max-width: 1000px;
+  width: 90%;
+  height: 600px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  z-index: 1;
+  position: relative;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    height: auto;
+    max-height: 90vh;
+    width: 100%;
+    max-width: 450px;
+  }
+`;
+
+export const SchoolIllustration = styled.div`
+  flex: 1;
+  background-image: url("https://source.unsplash.com/PXjQaGxi4JA/900x1600");
+  background-size: cover;
+  background-position: center;
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(63, 81, 181, 0.6) 0%,
+      rgba(0, 188, 212, 0.6) 100%
+    );
+  }
+
+  @media (max-width: 768px) {
+    height: 200px;
+    flex: none;
+  }
+`;
 
 export const AuthContainer = styled.div`
   width: 100vw;
@@ -14,41 +88,68 @@ export const AuthContainer = styled.div`
 `;
 
 export const AuthCard = styled.div`
-  padding: 2rem;
-  width: 100%;
-  max-width: 450px;
-  margin: 0 1rem;
-  backdrop-filter: blur(10px);
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  flex: 1;
+  padding: 3rem 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background-color: white;
+  border-radius: 0 20px 20px 0;
+  max-width: 500px;
+
+  @media (max-width: 768px) {
+    border-radius: 0 0 20px 20px;
+    padding: 2rem 1.5rem;
+  }
+`;
+
+export const LogoContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+`;
+
+export const UniversityLogo = styled.div`
+  width: 180px;
+  height: 80px;
+  background-image: url("/images/inu_logo.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  margin-bottom: 12px;
+`;
+
+export const SystemTitle = styled.h1`
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+  color: #003c8f;
+  text-align: center;
 `;
 
 export const AuthHeader = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
+  margin-bottom: 2rem;
 `;
 
 export const AuthTitle = styled.h1`
-  width: 100%;
-  font-size: ${typography.h4.fontSize};
-  font-weight: ${typography.h4.fontWeight};
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
   margin-bottom: 0.5rem;
-  color: ${colors.primary.main};
+  color: #333;
 `;
 
-export const AuthSubtitle = styled.h2`
-  font-size: ${typography.h6.fontSize};
-  font-weight: ${typography.h6.fontWeight};
-  margin-bottom: 1.5rem;
-  color: ${colors.text.secondary};
-`;
-
-export const AuthForm = styled.form`
-  margin-top: 1rem;
-  width: 100%;
+export const AuthSubtitle = styled.p`
+  font-size: 16px;
+  margin: 0;
+  color: #666;
+  margin-bottom: 1rem;
+  text-align: center;
 `;
 
 export const FormField = styled.div`
@@ -58,57 +159,79 @@ export const FormField = styled.div`
 export const FormLabel = styled.label`
   display: block;
   margin-bottom: 0.5rem;
-  font-size: ${typography.body2.fontSize};
-  color: ${colors.text.secondary};
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
 `;
 
-export const FormInput = styled.input<{ isError?: boolean }>`
+export const FormInput = styled.input`
   width: 100%;
-  background-color: white;
-  padding: 0.75rem 1rem;
-  color: black;
-  border: none;
-  border-bottom: 3px solid
-    ${(props) => (props.isError ? colors.error.main : colors.grey[300])};
-  font-family: ${typography.fontFamily};
-  font-size: ${typography.body1.fontSize};
-  transition: border-color 0.2s, box-shadow 0.2s;
-  outline: none;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 1rem;
+  transition: border-color 0.3s;
 
   &:focus {
-    border-color: ${(props) =>
-      props.isError ? colors.error.main : colors.primary.main};
-    box-shadow: 0 0 0 2px
-      ${(props) =>
-        props.isError
-          ? `rgba(${hexToRgb(colors.error.main)}, 0.2)`
-          : `rgba(${hexToRgb(colors.primary.main)}, 0.2)`};
-  }
-`;
-
-export const FormSelect = styled.select`
-  width: 100%;
-  color: black;
-  font-size: ${typography.body1.fontSize};
-  padding: 0.75rem 1rem;
-  border: 1px solid ${colors.grey[300]};
-  border-radius: 4px;
-  font-family: ${typography.fontFamily};
-  font-size: ${typography.body1.fontSize};
-  background-color: white;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  outline: none;
-
-  &:focus {
+    outline: none;
     border-color: ${colors.primary.main};
-    box-shadow: 0 0 0 2px rgba(${hexToRgb(colors.primary.main)}, 0.2);
+    box-shadow: 0 0 0 2px ${colors.primary.light};
   }
 `;
 
-export const FormErrorText = styled.div`
+export const FormErrorText = styled.p`
   color: ${colors.error.main};
-  font-size: ${typography.caption.fontSize};
+  font-size: 0.8rem;
   margin-top: 0.25rem;
+`;
+
+export const LoginButtonContainer = styled.div`
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+`;
+
+export const SocialLoginButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.9rem;
+  background-color: #fee500;
+  color: #000000;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  &:hover {
+    background-color: #ffd700;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+export const KakaoIcon = styled.div`
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
+  background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 3C7.03125 3 3 6.06079 3 9.82953C3 12.2635 4.55625 14.4118 6.86875 15.5969L5.89688 19.2059C5.8125 19.4912 6.12188 19.7294 6.37813 19.5676L10.6594 16.7471C11.0938 16.7941 11.5406 16.8235 12 16.8235C16.9688 16.8235 21 13.5985 21 9.82953C21 6.06079 16.9688 3 12 3Z' fill='black'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+`;
+
+export const FooterText = styled.p`
+  text-align: center;
+  color: #888;
+  font-size: 0.8rem;
+  margin-top: auto;
 `;
 
 export const ErrorMessage = styled.div`
@@ -118,90 +241,11 @@ export const ErrorMessage = styled.div`
   padding: 12px 16px;
   margin-bottom: 16px;
   border-radius: 4px;
-  
+
   p {
     margin: 0;
     font-size: 14px;
   }
-`;
-
-export const SubmitButton = styled.button`
-  width: 100%;
-  padding: 0.75rem;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
-  background-color: ${colors.primary.main};
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-family: ${typography.fontFamily};
-  font-size: ${typography.button.fontSize};
-  font-weight: ${typography.button.fontWeight};
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: ${colors.primary.dark};
-  }
-
-  &:disabled {
-    background-color: ${colors.grey[300]};
-    cursor: not-allowed;
-  }
-`;
-
-export const SocialLoginButton = styled.button`
-  width: 100%;
-  padding: 0.75rem;
-  margin-top: 0.5rem;
-  background-color: #fee500;
-  color: #000000;
-  border: none;
-  border-radius: 4px;
-  font-family: ${typography.fontFamily};
-  font-size: ${typography.button.fontSize};
-  font-weight: ${typography.button.fontWeight};
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #e6cf00;
-  }
-
-  svg {
-    margin-right: 8px;
-  }
-`;
-
-export const DividerContainer = styled.div`
-  display: flex;
-  align-items: center;
-  margin: 1.5rem 0;
-`;
-
-export const DividerLine = styled.div`
-  flex-grow: 1;
-  height: 1px;
-  background-color: ${colors.grey[300]};
-`;
-
-export const DividerText = styled.span`
-  padding: 0 1rem;
-  color: ${colors.text.secondary};
-  font-size: ${typography.body2.fontSize};
-`;
-
-export const AuthFooter = styled.div`
-  margin-top: 2rem;
-  text-align: center;
-`;
-
-export const FooterText = styled.p`
-  color: ${colors.text.secondary};
-  font-size: ${typography.body2.fontSize};
 `;
 
 export const ModalContainer = styled.div`
@@ -210,11 +254,11 @@ export const ModalContainer = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
 `;
 
 export const ModalContent = styled.div`
@@ -223,8 +267,6 @@ export const ModalContent = styled.div`
   padding: 2rem;
   width: 100%;
   max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 `;
 
@@ -233,65 +275,61 @@ export const ModalHeader = styled.div`
 `;
 
 export const ModalTitle = styled.h2`
-  font-size: ${typography.h5.fontSize};
-  font-weight: ${typography.h5.fontWeight};
-  color: ${colors.text.primary};
+  margin: 0;
   margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+  color: #333;
 `;
 
 export const ModalDescription = styled.p`
-  font-size: ${typography.body2.fontSize};
-  color: ${colors.text.secondary};
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+`;
+
+export const FormSelect = styled.select`
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 1rem;
+  background-color: white;
+  transition: border-color 0.3s;
+
+  &:focus {
+    outline: none;
+    border-color: ${colors.primary.main};
+    box-shadow: 0 0 0 2px ${colors.primary.light};
+  }
 `;
 
 export const ModalFooter = styled.div`
   display: flex;
-  justify-content: center;
-  margin-top: 2rem;
+  justify-content: flex-end;
   gap: 1rem;
+  margin-top: 2rem;
 `;
 
 export const ModalButton = styled.button<{ secondary?: boolean }>`
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  font-family: ${typography.fontFamily};
-  font-size: ${typography.button.fontSize};
-  font-weight: ${typography.button.fontWeight};
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s;
+  transition: all 0.2s ease;
 
-  ${(props) =>
-    props.secondary
-      ? `
-      background-color: transparent;
-      color: ${colors.text.primary};
-      border: 1px solid ${colors.grey[300]};
-      
-      &:hover {
-        background-color: ${colors.grey[100]};
-      }
-    `
-      : `
-      background-color: ${colors.primary.main};
-      color: white;
-      border: none;
-      
-      &:hover {
-        background-color: ${colors.primary.dark};
-      }
-    `}
+  background-color: ${(props) =>
+    props.secondary ? "#f5f5f5" : colors.primary.main};
+  color: ${(props) => (props.secondary ? "#333" : "white")};
+  border: ${(props) => (props.secondary ? "1px solid #ddd" : "none")};
+
+  &:hover {
+    background-color: ${(props) =>
+      props.secondary ? "#e0e0e0" : colors.primary.dark};
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
 `;
-
-// Helper function for rgba conversion
-function hexToRgb(hex: string): string {
-  const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-  hex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
-
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(
-        result[3],
-        16
-      )}`
-    : "0, 0, 0";
-}
