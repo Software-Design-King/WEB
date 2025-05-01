@@ -20,9 +20,13 @@ const StudentRecordsPage = lazy(() => import("./pages/student/records"));
 const TeacherGradesPage = lazy(() => import("./pages/teacher/grades"));
 const TeacherRecordsPage = lazy(() => import("./pages/teacher/records"));
 const TeacherFeedbackPage = lazy(() => import("./pages/teacher/feedback"));
-const TeacherConsultationPage = lazy(() => import("./pages/teacher/consultation"));
+const TeacherConsultationPage = lazy(
+  () => import("./pages/teacher/consultation")
+);
 const StudentFeedbackPage = lazy(() => import("./pages/student/feedback"));
-const StudentConsultationPage = lazy(() => import("./pages/student/consultation"));
+const StudentConsultationPage = lazy(
+  () => import("./pages/student/consultation")
+);
 
 // 로딩 컴포넌트
 const Loading = () => <div>로딩 중...</div>;
@@ -113,7 +117,7 @@ function AppRoutes() {
   return (
     <Routes>
       {/* 인증이 필요하지 않은 경로 */}
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/" element={<LoginPage />} />
       <Route path="/auth/kakao/callback" element={<KakaoCallbackPage />} />
 
       {/* 홈 리다이렉트 */}
