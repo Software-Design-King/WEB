@@ -37,10 +37,14 @@ export const storage = {
     const info = localStorage.getItem(USER_INFO);
     return info ? JSON.parse(info) : null;
   },
-  setUserInfo: (info: any) => localStorage.setItem(USER_INFO, JSON.stringify(info)),
+  // 로컬 스토리지에 저장하지 않고 Zustand에서만 상태 관리하도록 수정
+  setUserInfo: (info: any) => {
+    // localStorage에 저장하지 않음 (상태는 Zustand에서만 관리)
+    console.log('사용자 정보는 로컬 스토리지에 저장되지 않습니다. Zustand로만 관리됩니다.');
+  },
   clearAuth: () => {
     localStorage.removeItem(AUTH_ACCESS_TOKEN);
     localStorage.removeItem(AUTH_REFRESH_TOKEN);
-    localStorage.removeItem(USER_INFO);
+    localStorage.removeItem(USER_INFO); // 기존에 저장된 데이터 제거
   }
 };

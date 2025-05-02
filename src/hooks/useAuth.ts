@@ -1,15 +1,14 @@
-import { useState, useCallback, useEffect } from 'react';
-import { getUserInfo } from '../apis/user';
-import { UserInfo } from '../types/user';
-import { storage } from '../utils/storage';
-import { USER_INFO } from '../constants/auth';
+import { useState, useCallback } from "react";
+import { UserInfo } from "../types/user";
+import { storage } from "../utils/storage";
+import { USER_INFO } from "../constants/auth";
 
 interface UseAuthReturn {
   userInfo: UserInfo | null;
   isLoading: boolean;
   error: string | null;
   isAuthenticated: boolean;
-  loadUserInfo: () => Promise<UserInfo | null>;
+  login: (token: string, userInfo: UserInfo) => void;
   logout: () => void;
   setUserInfo: (info: UserInfo | null) => void;
 }
@@ -20,91 +19,49 @@ export const useAuth = (): UseAuthReturn => {
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!storage.getToken());
 
-  // 사용자 정보 불러오기
-  const loadUserInfo = useCallback(async (): Promise<UserInfo | null> => {
-    const token = storage.getToken();
-    if (!token) {
-      setError('로그인이 필요합니다.');
-      setIsAuthenticated(false);
-      return null;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
+  // 로그인 함수
+  const login = useCallback((token: string, info: UserInfo) => {
     try {
-      const info = await getUserInfo();
+      setIsLoading(true); // 로그인 처리 시작
       
-      if (info) {
-        // 사용자 정보 검증 및 필수 필드 확인
-        if (!info.userType) {
-          throw new Error('사용자 역할 정보가 없습니다.');
-        }
-        
-        setUserInfo(info);
-        storage.set(USER_INFO, info);
-        setIsAuthenticated(true);
-        return info;
-      } else {
-        throw new Error('사용자 정보가 없습니다.');
-      }
-    } catch (err) {
-      console.error('사용자 정보 로드 오류:', err);
-      setError('사용자 정보를 불러오는데 실패했습니다.');
-      setIsAuthenticated(false);
-      storage.clearAuth(); // 인증 정보 삭제
-      return null;
+      // 토큰 저장
+      storage.setToken(token);
+      // 사용자 정보 저장 (로컬 스토리지 저장 제거)
+      setUserInfo(info);
+      // 인증 상태 업데이트
+      setIsAuthenticated(true);
+      // 에러 초기화
+      setError(null);
+    } catch (error) {
+      setError('로그인 처리 중 오류가 발생했습니다.');
+      console.error('로그인 오류:', error);
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // 로그인 처리 완료
     }
   }, []);
 
   // 로그아웃
   const logout = useCallback(() => {
-    storage.clearAuth();
-    setUserInfo(null);
-    setIsAuthenticated(false);
-  }, []);
-
-  // 초기 로드 시 토큰 확인 및 만료 체크
-  useEffect(() => {
-    const token = storage.getToken();
-    const storedInfo = storage.get(USER_INFO);
-    
-    // 토큰 유효성 확인을 위한 간단한 만료 체크
-    const checkTokenExpiration = (): boolean => {
-      const tokenData = token ? JSON.parse(atob(token.split('.')[1])) : null;
-      if (!tokenData || !tokenData.exp) return false;
+    try {
+      setIsLoading(true); // 로그아웃 처리 시작
       
-      // 토큰 만료 시간과 현재 시간 비교
-      const expirationTime = tokenData.exp * 1000; // 밀리초로 변환
-      const currentTime = Date.now();
-      
-      return currentTime < expirationTime;
-    };
-    
-    if (storedInfo && token && checkTokenExpiration()) {
-      setUserInfo(storedInfo);
-      setIsAuthenticated(true);
-    } else if (token) {
-      // 토큰이 있지만 유저 정보가 없거나 토큰이 만료된 경우
-      loadUserInfo().catch(() => {
-        storage.clearAuth(); // 로드 실패 시 인증 정보 삭제
-        setIsAuthenticated(false);
-      });
-    } else {
-      // 토큰이 없는 경우
-      setIsAuthenticated(false);
+      storage.clearAuth();
       setUserInfo(null);
+      setIsAuthenticated(false);
+    } catch (error) {
+      setError('로그아웃 처리 중 오류가 발생했습니다.');
+      console.error('로그아웃 오류:', error);
+    } finally {
+      setIsLoading(false); // 로그아웃 처리 완료
     }
-  }, [loadUserInfo]);
+  }, []);
 
   return {
     userInfo,
     isLoading,
     error,
     isAuthenticated,
-    loadUserInfo,
+    login,
     logout,
     setUserInfo
   };
