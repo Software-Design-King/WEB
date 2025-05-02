@@ -9,6 +9,7 @@ import {
   ContentContainer,
 } from "../../../components/dashboard/DashboardComponents.styles";
 import { colors } from "../../../components/common/Common.styles";
+import { useUserStore } from "../../../stores/userStore";
 
 // 임시 유저 데이터
 const userData = {
@@ -346,6 +347,24 @@ const StatusBadge = styled.span<{ type: string }>`
 const StudentRecordsPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState(recordCategories[0].id);
   
+  // Zustand에서 사용자 정보 가져오기
+  const userInfo = useUserStore((state) => state.userInfo);
+  const isLoading = useUserStore((state) => state.isLoading);
+  
+  // 로딩 중이거나 사용자 정보가 없는 경우
+  if (isLoading || !userInfo) {
+    return (
+      <DashboardLayout
+        userName="로딩 중..."
+        userRole="학생"
+        userInfo="정보를 불러오는 중입니다."
+        notificationCount={0}
+      >
+        <div>사용자 정보를 불러오는 중입니다...</div>
+      </DashboardLayout>
+    );
+  }
+  
   // 선택된 카테고리에 따른 내용 렌더링
   const renderCategoryContent = () => {
     switch (selectedCategory) {
@@ -514,11 +533,12 @@ const StudentRecordsPage: React.FC = () => {
 
   return (
     <DashboardLayout
-      userName={userData.name}
-      userRole={userData.role}
-      userInfo={`${userData.grade}학년 ${userData.class}반 ${userData.number}번`}
+      userName={userInfo.name || "학생"}
+      userRole="학생"
+      userInfo={userInfo.roleInfo || ""}
+      notificationCount={2}
     >
-      <StudentSidebar isCollapsed={false} />
+      <StudentSidebar {...{ isCollapsed: false }} />
       
       <ContentContainer>
         <RecordsContainer>
