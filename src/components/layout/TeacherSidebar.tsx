@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import styled from "@emotion/styled";
 import { colors } from "../common/Common.styles";
@@ -72,21 +72,6 @@ const MenuText = styled.span<{ isCollapsed: boolean }>`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-`;
-
-// 메뉴 카운트
-const MenuCount = styled.span<{ isCollapsed: boolean }>`
-  display: ${(props) => (props.isCollapsed ? "none" : "flex")};
-  margin-left: auto;
-  background-color: ${colors.primary.main};
-  color: white;
-  font-size: 0.7rem;
-  padding: 0.1rem 0.4rem;
-  border-radius: 10px;
-  min-width: 20px;
-  height: 20px;
-  align-items: center;
-  justify-content: center;
 `;
 
 interface TeacherSidebarProps {
@@ -221,9 +206,9 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
           상담 및 피드백
         </MenuGroupTitle>
         <MenuItem
-          active={isActive("/teacher/counseling")}
+          active={isActive("/teacher/consultation")}
           isCollapsed={isCollapsed}
-          onClick={() => navigate("/teacher/counseling")}
+          onClick={() => navigate("/teacher/consultation")}
         >
           <MenuIcon isCollapsed={isCollapsed}>
             <svg
@@ -236,15 +221,14 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
               <path
                 d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2ZM20 16H5.17L4 17.17V4H20V16Z"
                 fill={
-                  isActive("/teacher/counseling")
+                  isActive("/teacher/consultation")
                     ? colors.primary.main
                     : colors.text.secondary
                 }
               />
             </svg>
           </MenuIcon>
-          <MenuText isCollapsed={isCollapsed}>상담 내역</MenuText>
-          <MenuCount isCollapsed={isCollapsed}>3</MenuCount>
+          <MenuText isCollapsed={isCollapsed}>상담내역 관리</MenuText>
         </MenuItem>
 
         <MenuItem
@@ -271,64 +255,6 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
             </svg>
           </MenuIcon>
           <MenuText isCollapsed={isCollapsed}>피드백 관리</MenuText>
-        </MenuItem>
-      </MenuGroup>
-
-      <MenuGroup>
-        <MenuGroupTitle isCollapsed={isCollapsed}>보고서</MenuGroupTitle>
-        <MenuItem
-          active={isActive("/teacher/reports")}
-          isCollapsed={isCollapsed}
-          onClick={() => navigate("/teacher/reports")}
-        >
-          <MenuIcon isCollapsed={isCollapsed}>
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM9 17H7V10H9V17ZM13 17H11V7H13V17ZM17 17H15V13H17V17Z"
-                fill={
-                  isActive("/teacher/reports")
-                    ? colors.primary.main
-                    : colors.text.secondary
-                }
-              />
-            </svg>
-          </MenuIcon>
-          <MenuText isCollapsed={isCollapsed}>보고서 생성</MenuText>
-        </MenuItem>
-      </MenuGroup>
-
-      <MenuGroup>
-        <MenuGroupTitle isCollapsed={isCollapsed}>시스템</MenuGroupTitle>
-        <MenuItem
-          active={isActive("/settings")}
-          isCollapsed={isCollapsed}
-          onClick={() => navigate("/settings")}
-        >
-          <MenuIcon isCollapsed={isCollapsed}>
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M19.14 12.94C19.18 12.64 19.2 12.33 19.2 12C19.2 11.68 19.18 11.36 19.14 11.06L21.16 9.48C21.34 9.34 21.39 9.07 21.28 8.87L19.36 5.55C19.24 5.33 18.99 5.26 18.77 5.33L16.38 6.29C15.88 5.91 15.35 5.59 14.76 5.35L14.4 2.81C14.36 2.57 14.16 2.4 13.92 2.4H10.08C9.84 2.4 9.65 2.57 9.61 2.81L9.25 5.35C8.66 5.59 8.12 5.91 7.63 6.29L5.24 5.33C5.02 5.26 4.77 5.33 4.65 5.55L2.74 8.87C2.62 9.07 2.66 9.34 2.86 9.48L4.88 11.06C4.84 11.36 4.8 11.69 4.8 12C4.8 12.31 4.82 12.64 4.86 12.94L2.84 14.52C2.66 14.66 2.61 14.93 2.72 15.13L4.64 18.45C4.76 18.67 5.01 18.74 5.23 18.67L7.62 17.71C8.12 18.09 8.65 18.41 9.24 18.65L9.6 21.19C9.65 21.43 9.84 21.6 10.08 21.6H13.92C14.16 21.6 14.36 21.43 14.39 21.19L14.75 18.65C15.34 18.41 15.88 18.09 16.37 17.71L18.76 18.67C18.98 18.74 19.23 18.67 19.35 18.45L21.27 15.13C21.39 14.91 21.34 14.66 21.16 14.52L19.14 12.94ZM12 15.6C10.02 15.6 8.4 13.98 8.4 12C8.4 10.02 10.02 8.4 12 8.4C13.98 8.4 15.6 10.02 15.6 12C15.6 13.98 13.98 15.6 12 15.6Z"
-                fill={
-                  isActive("/settings")
-                    ? colors.primary.main
-                    : colors.text.secondary
-                }
-              />
-            </svg>
-          </MenuIcon>
-          <MenuText isCollapsed={isCollapsed}>설정</MenuText>
         </MenuItem>
       </MenuGroup>
     </SidebarContainer>
