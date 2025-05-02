@@ -9,6 +9,7 @@ import {
 import { Suspense, lazy, useEffect, ReactNode, useCallback } from "react";
 import { useAuth } from "./hooks/useAuth";
 import { UserInfo } from "./types/user";
+import { useUserStore } from "./stores/userStore";
 
 // 페이지 컴포넌트 (지연 로딩)
 const LoginPage = lazy(() => import("./pages/auth/login"));
@@ -41,108 +42,103 @@ const ProtectedRoute = ({
   children: ReactNode;
   requiredRole?: "STUDENT" | "TEACHER" | "PARENT";
 }) => {
-  const { userInfo, isLoading, isAuthenticated, loadUserInfo } = useAuth();
+  const { userInfo, isLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
+  // 카카오 콜백 경로인지 확인
+  const isKakaoCallbackPath = location.pathname.includes("/auth/kakao/callback");
+
   // 사용자 역할에 따른 리다이렉트 함수
-  const redirectBasedOnUserRole = useCallback((user: UserInfo) => {
-    if (user.userType === "STUDENT" || user.userType === "PARENT") {
-      navigate("/student/dashboard", { replace: true });
-    } else if (user.userType === "TEACHER") {
-      navigate("/teacher/dashboard", { replace: true });
-    } else {
-      navigate("/", { replace: true });
-    }
-  }, [navigate]);
+  const redirectBasedOnUserRole = useCallback(
+    (user: UserInfo) => {
+      if (user.userType === "STUDENT" || user.userType === "PARENT") {
+        navigate("/student/dashboard", { replace: true });
+      } else if (user.userType === "TEACHER") {
+        navigate("/teacher/dashboard", { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
+    },
+    [navigate]
+  );
 
   useEffect(() => {
-    const checkAuthAndRedirect = async () => {
-      // 인증 상태 확인
-      if (!isAuthenticated) {
-        try {
-          const user = await loadUserInfo();
-          if (!user) {
-            // 로그인 페이지로 리다이렉트하고 현재 경로 저장
-            navigate('/', { 
-              replace: true,
-              state: { 
-                from: location.pathname,
-                error: "세션이 만료되었거나 로그인이 필요합니다."
-              } 
-            });
-          } else if (requiredRole && user.userType !== requiredRole) {
-            // 권한이 불일치할 경우 적절한 대시보드로 리다이렉트
-            redirectBasedOnUserRole(user);
-          }
-        } catch (error) {
-          console.error("인증 확인 중 오류:", error);
-          navigate('/', { 
-            replace: true,
-            state: { 
-              from: location.pathname,
-              error: "인증 처리 중 오류가 발생했습니다."
-            } 
-          });
-        }
-        return;
-      }
+    // 카카오 콜백 경로일 경우 인증 체크를 수행하지 않음
+    if (isKakaoCallbackPath) {
+      return;
+    }
 
-      // 권한 확인 (인증된 상태이며 사용자 정보가 있는 경우)
-      if (requiredRole && userInfo && userInfo.userType !== requiredRole) {
-        redirectBasedOnUserRole(userInfo);
-      }
-    };
+    // 인증되지 않은 경우 로그인 페이지로 리다이렉션
+    if (!isAuthenticated && !isLoading) {
+      // 현재 경로를 returnUrl로 저장
+      const currentPath = location.pathname + location.search;
+      navigate(`/?returnUrl=${encodeURIComponent(currentPath)}`, {
+        replace: true,
+      });
+      return;
+    }
 
-    checkAuthAndRedirect();
-  }, [isAuthenticated, userInfo, loadUserInfo, navigate, requiredRole, location.pathname, redirectBasedOnUserRole]);
+    // 사용자 정보가 있고 역할이 필요한 경우 체크
+    if (userInfo && requiredRole && userInfo.userType !== requiredRole) {
+      // 역할이 맞지 않으면 대시보드로 리다이렉션
+      redirectBasedOnUserRole(userInfo);
+    }
+  }, [
+    userInfo,
+    isAuthenticated,
+    isLoading,
+    navigate,
+    location.pathname,
+    location.search,
+    requiredRole,
+    redirectBasedOnUserRole,
+    isKakaoCallbackPath,
+  ]);
 
+  // 로딩 중이거나 인증되지 않은 경우 로딩 표시
   if (isLoading) {
     return <Loading />;
   }
 
-  // 인증 및 권한 확인 통과
+  // 인증이 완료되었거나 카카오 콜백 경로인 경우 자식 컴포넌트 렌더링
   return <>{children}</>;
 };
 
-// Home 리다이렉트 컴포넌트
+// 홈 경로에서 사용자 타입에 따라 적절한 대시보드로 리다이렉트
 const HomeRedirect = () => {
-  const { userInfo, isAuthenticated, loadUserInfo } = useAuth();
+  const { userInfo, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   // 사용자 역할에 따른 리다이렉트 함수
-  const redirectBasedOnUserRole = useCallback((user: UserInfo) => {
-    if (user.userType === "STUDENT" || user.userType === "PARENT") {
-      navigate("/student/dashboard", { replace: true });
-    } else if (user.userType === "TEACHER") {
-      navigate("/teacher/dashboard", { replace: true });
-    } else {
-      navigate("/", { replace: true });
-    }
-  }, [navigate]);
+  const redirectBasedOnUserRole = useCallback(
+    (user: UserInfo) => {
+      if (user.userType === "STUDENT" || user.userType === "PARENT") {
+        navigate("/student/dashboard", { replace: true });
+      } else if (user.userType === "TEACHER") {
+        navigate("/teacher/dashboard", { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
+    },
+    [navigate]
+  );
 
   useEffect(() => {
-    const checkAuthAndRedirect = async () => {
-      // 이미 로그인된 상태라면
-      if (isAuthenticated && userInfo) {
-        redirectBasedOnUserRole(userInfo);
-        return;
-      }
+    // 인증이 완료된 사용자 정보가 있는 경우
+    if (isAuthenticated && userInfo) {
+      redirectBasedOnUserRole(userInfo);
+      return;
+    }
 
-      // 인증 상태가 아니라면 서버에서 정보 확인 시도
-      try {
-        const user = await loadUserInfo();
-        if (user) {
-          redirectBasedOnUserRole(user);
-        }
-      } catch (error) {
-        console.error("사용자 정보 로드 중 오류:", error);
-        // 오류 발생 시 로그인 페이지 유지
-      }
-    };
-    
-    checkAuthAndRedirect();
-  }, [userInfo, isAuthenticated, loadUserInfo, navigate, redirectBasedOnUserRole]);
+    // 인증되지 않은 경우 로그인 페이지로 이동
+    navigate("/", { replace: true });
+  }, [
+    userInfo,
+    isAuthenticated,
+    navigate,
+    redirectBasedOnUserRole,
+  ]);
 
   return <Loading />;
 };
@@ -152,11 +148,11 @@ const LoginPageWrapper = () => {
   const location = useLocation();
   const { isAuthenticated, userInfo } = useAuth();
   const navigate = useNavigate();
-  
+
   // URL 쿼리 파라미터 가져오기
   const searchParams = new URLSearchParams(location.search);
-  const errorParam = searchParams.get('error');
-  
+  const errorParam = searchParams.get("error");
+
   // 이미 인증된 사용자 리디렉션
   useEffect(() => {
     if (isAuthenticated && userInfo) {
@@ -167,23 +163,42 @@ const LoginPageWrapper = () => {
       }
     }
   }, [isAuthenticated, userInfo, navigate]);
-  
+
   // location.state에서 리디렉션 전 경로 가져오기
   const from = location.state?.from || "/";
-  
+
   // 에러 메시지 설정
   let errorMessage = null;
-  if (errorParam === 'auth_required') {
+  if (errorParam === "auth_required") {
     errorMessage = "로그인이 만료되었습니다. 다시 로그인해주세요.";
   } else if (errorParam) {
     errorMessage = errorParam;
   }
-  
+
   return (
     <Suspense fallback={<Loading />}>
       <LoginPage errorMessage={errorMessage} redirectPath={from} />
     </Suspense>
   );
+};
+
+// App 전체에서 사용자 데이터를 로드하는 컴포넌트
+const AppUserDataLoader = ({ children }: { children: ReactNode }) => {
+  const loadUserInfo = useUserStore((state) => state.loadUserInfo);
+  const userInfo = useUserStore((state) => state.userInfo);
+  
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    if (token && !userInfo) {
+      // 토큰이 있고 사용자 정보가 없는 경우에만 로드
+      loadUserInfo(token).catch(error => {
+        console.error('앱 초기화 중 사용자 정보 로드 오류:', error);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  
+  return <>{children}</>;
 };
 
 function AppRoutes() {
@@ -290,7 +305,9 @@ function App() {
   return (
     <BrowserRouter>
       <Suspense fallback={<Loading />}>
-        <AppRoutes />
+        <AppUserDataLoader>
+          <AppRoutes />
+        </AppUserDataLoader>
       </Suspense>
     </BrowserRouter>
   );
