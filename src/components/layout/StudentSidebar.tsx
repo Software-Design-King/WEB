@@ -163,33 +163,6 @@ export const StudentSidebar: React.FC<StudentSidebarProps> = ({
             </svg>
           </MenuIcon>
           <MenuText isCollapsed={isCollapsed}>성적 관리</MenuText>
-          {!isParent && <MenuBadge isCollapsed={isCollapsed}>NEW</MenuBadge>}
-        </MenuItem>
-
-        <MenuItem
-          active={isActive("/student/attendance")}
-          isCollapsed={isCollapsed}
-          onClick={() => navigate("/student/attendance")}
-        >
-          <MenuIcon isCollapsed={isCollapsed}>
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM16.53 11.06L15.47 10L10.59 14.88L8.47 12.76L7.41 13.82L10.59 17L16.53 11.06Z"
-                fill={
-                  isActive("/student/attendance")
-                    ? colors.primary.main
-                    : colors.text.secondary
-                }
-              />
-            </svg>
-          </MenuIcon>
-          <MenuText isCollapsed={isCollapsed}>출결 현황</MenuText>
         </MenuItem>
 
         <MenuItem
@@ -224,9 +197,9 @@ export const StudentSidebar: React.FC<StudentSidebarProps> = ({
           상담 및 피드백
         </MenuGroupTitle>
         <MenuItem
-          active={isActive("/student/counseling")}
+          active={isActive("/student/consultation")}
           isCollapsed={isCollapsed}
-          onClick={() => navigate("/student/counseling")}
+          onClick={() => navigate("/student/consultation")}
         >
           <MenuIcon isCollapsed={isCollapsed}>
             <svg
@@ -239,14 +212,14 @@ export const StudentSidebar: React.FC<StudentSidebarProps> = ({
               <path
                 d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2ZM20 16H5.17L4 17.17V4H20V16Z"
                 fill={
-                  isActive("/student/counseling")
+                  isActive("/student/consultation")
                     ? colors.primary.main
                     : colors.text.secondary
                 }
               />
             </svg>
           </MenuIcon>
-          <MenuText isCollapsed={isCollapsed}>상담 신청/내역</MenuText>
+          <MenuText isCollapsed={isCollapsed}>상담내역 관리</MenuText>
         </MenuItem>
 
         <MenuItem
@@ -273,7 +246,6 @@ export const StudentSidebar: React.FC<StudentSidebarProps> = ({
             </svg>
           </MenuIcon>
           <MenuText isCollapsed={isCollapsed}>선생님 피드백</MenuText>
-          <MenuBadge isCollapsed={isCollapsed}>2</MenuBadge>
         </MenuItem>
       </MenuGroup>
 
@@ -334,35 +306,6 @@ export const StudentSidebar: React.FC<StudentSidebarProps> = ({
           </MenuItem>
         </MenuGroup>
       )}
-
-      <MenuGroup>
-        <MenuGroupTitle isCollapsed={isCollapsed}>시스템</MenuGroupTitle>
-        <MenuItem
-          active={isActive("/settings")}
-          isCollapsed={isCollapsed}
-          onClick={() => navigate("/settings")}
-        >
-          <MenuIcon isCollapsed={isCollapsed}>
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2ZM16 18H8V16H16V18ZM16 14H8V12H16V14ZM13 9V3.5L18.5 9H13Z"
-                fill={
-                  isActive("/settings")
-                    ? colors.primary.main
-                    : colors.text.secondary
-                }
-              />
-            </svg>
-          </MenuIcon>
-          <MenuText isCollapsed={isCollapsed}>설정</MenuText>
-        </MenuItem>
-      </MenuGroup>
     </SidebarContainer>
   );
 };
