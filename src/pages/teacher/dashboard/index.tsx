@@ -113,9 +113,15 @@ const AlertCenterTitle = styled.h2`
 
 // 네비게이션 아이콘
 const NavIcon = styled.div`
-  font-size: 3rem;
-  color: ${colors.primary.main};
-  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  
+  svg {
+    width: 48px;
+    height: 48px;
+  }
 `;
 
 // 네비게이션 제목
@@ -137,12 +143,13 @@ const NavDescription = styled.p`
 const TeacherDashboard = () => {
   // Zustand 사용자 정보 가져오기
   const userInfo = useUserStore((state) => state.userInfo);
-  
+  const isLoading = useUserStore((state) => state.isLoading);
+
   // 콘솔 로그 추가
   console.log("교사 대시보드 - Zustand에 저장된 사용자 정보:", userInfo);
-  
-  // 사용자 정보가 없는 경우 로딩 표시
-  if (!userInfo) {
+
+  // 사용자 정보 로딩 중인 경우 로딩 표시
+  if (isLoading || !userInfo) {
     return (
       <DashboardLayout
         userName="로딩 중..."
@@ -162,7 +169,7 @@ const TeacherDashboard = () => {
       userInfo={userInfo.roleInfo || "과목 정보 없음"}
       notificationCount={2}
     >
-      <TeacherSidebar isCollapsed={false} />
+      <TeacherSidebar {...{ isCollapsed: false }} />
 
       <ContentContainer>
         {/* 2x2 그리드 레이아웃의 네비게이션 카드 */}
@@ -171,7 +178,11 @@ const TeacherDashboard = () => {
           <NavigationCard
             onClick={() => (window.location.href = "/teacher/grades")}
           >
-            <NavIcon>📊</NavIcon>
+            <NavIcon>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM9 17H7V10H9V17ZM13 17H11V7H13V17ZM17 17H15V13H17V17Z" fill={colors.primary.main} />
+              </svg>
+            </NavIcon>
             <NavTitle>학생 성적 관리</NavTitle>
             <NavDescription>
               학생들의 성적을 입력하고 관리할 수 있습니다. 성적 추이와 통계를
@@ -183,7 +194,12 @@ const TeacherDashboard = () => {
           <NavigationCard
             onClick={() => (window.location.href = "/teacher/records")}
           >
-            <NavIcon>📝</NavIcon>
+            <NavIcon>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2Z" fill={colors.primary.main} opacity="0.3" />
+                <path d="M14 2V8H20M16 13H8V15H16V13ZM16 17H8V19H16V17ZM10 9H8V11H10V9Z" stroke={colors.primary.main} strokeWidth="1.5" />
+              </svg>
+            </NavIcon>
             <NavTitle>학생부 관리</NavTitle>
             <NavDescription>
               학생들의 출결 상황, 특기사항, 활동 내역 등 학생부 정보를 관리할 수
@@ -195,21 +211,31 @@ const TeacherDashboard = () => {
           <NavigationCard
             onClick={() => (window.location.href = "/teacher/feedback")}
           >
-            <NavIcon>💬</NavIcon>
+            <NavIcon>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 2H4C2.9 2 2.01 2.9 2.01 4L2 22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" fill={colors.primary.main} opacity="0.3" />
+                <path d="M13 14H11V12H13V14ZM13 10H11V6H13V10Z" fill={colors.primary.main} />
+              </svg>
+            </NavIcon>
             <NavTitle>피드백 관리</NavTitle>
             <NavDescription>
               학생들에게 피드백을 작성하고 관리할 수 있습니다.
             </NavDescription>
           </NavigationCard>
 
-          {/* 상담내역 관리 */}
+          {/* 상담 관리 */}
           <NavigationCard
             onClick={() => (window.location.href = "/teacher/consultation")}
           >
-            <NavIcon>🤝</NavIcon>
+            <NavIcon>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2ZM20 16H6L4 18V4H20V16Z" fill={colors.primary.main} />
+                <path d="M11 12H13V14H11V12ZM11 6H13V10H11V6Z" fill={colors.primary.main} />
+              </svg>
+            </NavIcon>
             <NavTitle>상담내역 관리</NavTitle>
             <NavDescription>
-              학생 및 학부모 상담 일정을 관리하고 상담 내역을 기록할 수
+              학생 및 학부모와의 상담 일정을 관리하고 상담 내역을 기록할 수
               있습니다.
             </NavDescription>
           </NavigationCard>
@@ -218,7 +244,10 @@ const TeacherDashboard = () => {
         {/* 알림 센터 */}
         <AlertCenterContainer>
           <AlertCenterTitle>
-            <span style={{ marginRight: "0.5rem" }}>🔔</span> 알림센터
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: "0.5rem" }}>
+              <path d="M12 22C13.1 22 14 21.1 14 20H10C10 21.1 10.9 22 12 22ZM18 16V11C18 7.93 16.37 5.36 13.5 4.68V4C13.5 3.17 12.83 2.5 12 2.5C11.17 2.5 10.5 3.17 10.5 4V4.68C7.64 5.36 6 7.92 6 11V16L4 18V19H20V18L18 16ZM16 17H8V11C8 8.52 9.51 6.5 12 6.5C14.49 6.5 16 8.52 16 11V17Z" fill={colors.primary.main} />
+            </svg>
+            알림센터
           </AlertCenterTitle>
           <NotificationContainer>
             {notificationData.map((notification) => (

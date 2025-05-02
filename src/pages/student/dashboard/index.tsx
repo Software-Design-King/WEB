@@ -77,9 +77,15 @@ const AlertCenterTitle = styled.h2`
 
 // 네비게이션 아이콘
 const NavIcon = styled.div`
-  font-size: 3rem;
-  color: ${colors.primary.main};
-  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  
+  svg {
+    width: 48px;
+    height: 48px;
+  }
 `;
 
 // 네비게이션 제목
@@ -99,8 +105,23 @@ const NavDescription = styled.p`
 
 // 학생 대시보드 컴포넌트
 const StudentDashboard = () => {
-  // Zustand로부터 사용자 정보 가져오기
-  const { userInfo } = useUserStore();
+  // Zustand 사용자 정보 가져오기
+  const userInfo = useUserStore((state) => state.userInfo);
+  const isLoading = useUserStore((state) => state.isLoading);
+  
+  // 사용자 정보 로딩 중인 경우 로딩 표시
+  if (isLoading || !userInfo) {
+    return (
+      <DashboardLayout
+        userName="로딩 중..."
+        userRole="학생"
+        userInfo="정보를 불러오는 중입니다."
+        notificationCount={0}
+      >
+        <div>사용자 정보를 불러오는 중입니다...</div>
+      </DashboardLayout>
+    );
+  }
 
   // 사용자 정보 파싱 - roleInfo에서 학년, 반 정보 추출
   const roleInfoParts = userInfo?.roleInfo
@@ -122,7 +143,7 @@ const StudentDashboard = () => {
       userInfo={userInfo?.roleInfo || ""}
       notificationCount={2}
     >
-      <StudentSidebar isCollapsed={false} />
+      <StudentSidebar {...{ isCollapsed: false }} />
 
       <ContentContainer>
         {/* 2x2 그리드 레이아웃의 네비게이션 카드 */}
@@ -131,7 +152,11 @@ const StudentDashboard = () => {
           <NavigationCard
             onClick={() => (window.location.href = "/student/grades")}
           >
-            <NavIcon>📊</NavIcon>
+            <NavIcon>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 22V8H7V22H3ZM10 22V2H14V22H10ZM17 22V14H21V22H17Z" fill={colors.primary.main} />
+              </svg>
+            </NavIcon>
             <NavTitle>나의 성적 관리</NavTitle>
             <NavDescription>
               나의 학기별 성적을 확인하고 관리할 수 있습니다. 과목별 성적 추이와
@@ -143,7 +168,12 @@ const StudentDashboard = () => {
           <NavigationCard
             onClick={() => (window.location.href = "/student/records")}
           >
-            <NavIcon>📝</NavIcon>
+            <NavIcon>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2Z" fill={colors.primary.main} opacity="0.3" />
+                <path d="M14 2V8H20M16 13H8V15H16V13ZM16 17H8V19H16V17ZM10 9H8V11H10V9Z" stroke={colors.primary.main} strokeWidth="1.5" />
+              </svg>
+            </NavIcon>
             <NavTitle>나의 학생부 관리</NavTitle>
             <NavDescription>
               나의 출결 상황, 특기사항, 활동 내역 등 학생부 정보를 확인할 수
@@ -155,7 +185,12 @@ const StudentDashboard = () => {
           <NavigationCard
             onClick={() => (window.location.href = "/student/feedback")}
           >
-            <NavIcon>💬</NavIcon>
+            <NavIcon>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 2H4C2.9 2 2.01 2.9 2.01 4L2 22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" fill={colors.primary.main} opacity="0.3" />
+                <path d="M13 14H11V12H13V14ZM13 10H11V6H13V10Z" fill={colors.primary.main} />
+              </svg>
+            </NavIcon>
             <NavTitle>피드백 열람</NavTitle>
             <NavDescription>
               교사로부터 받은 피드백을 확인하고 관리할 수 있습니다.
@@ -166,7 +201,11 @@ const StudentDashboard = () => {
           <NavigationCard
             onClick={() => (window.location.href = "/student/consultation")}
           >
-            <NavIcon>🤝</NavIcon>
+            <NavIcon>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill={colors.primary.main} />
+              </svg>
+            </NavIcon>
             <NavTitle>상담내역 관리</NavTitle>
             <NavDescription>
               상담 일정을 예약하고 이전 상담 내역을 확인할 수 있습니다.
@@ -177,7 +216,10 @@ const StudentDashboard = () => {
         {/* 알림 센터 */}
         <AlertCenterContainer>
           <AlertCenterTitle>
-            <span style={{ marginRight: "0.5rem" }}>🔔</span> 알림센터
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: "0.5rem" }}>
+              <path d="M12 22C13.1 22 14 21.1 14 20H10C10 21.1 10.9 22 12 22ZM18 16V11C18 7.93 16.37 5.36 13.5 4.68V4C13.5 3.17 12.83 2.5 12 2.5C11.17 2.5 10.5 3.17 10.5 4V4.68C7.64 5.36 6 7.92 6 11V16L4 18V19H20V18L18 16ZM16 17H8V11C8 8.52 9.51 6.5 12 6.5C14.49 6.5 16 8.52 16 11V17Z" fill={colors.primary.main} />
+            </svg>
+            알림센터
           </AlertCenterTitle>
           <NotificationContainer>
             {notificationData.map((notification) => (

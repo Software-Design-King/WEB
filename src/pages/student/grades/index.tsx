@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "@emotion/styled";
 import { Radar } from "recharts";
 import {
@@ -17,90 +17,25 @@ import {
   ContentContainer,
 } from "../../../components/dashboard/DashboardComponents.styles";
 import { colors } from "../../../components/common/Common.styles";
+import { useUserStore } from "../../../stores/userStore";
+import { getStudentGrades } from "../../../apis/grades";
+import { GradeData } from "../../../types/grades";
 
-// 임시 유저 데이터
-const userData = {
-  name: "김민준",
-  role: "학생",
-  grade: 2,
-  class: 3,
-  number: 12,
-};
-
-// 임시 성적 데이터
+// 학기 옵션
 const semesterOptions = ["2025-1학기", "2024-2학기", "2024-1학기", "2023-2학기"];
 
-interface GradeData {
-  subject: string;
-  score: number;
-  grade: string;
-  semester: string;
-}
+// 로딩 상태 컴포넌트
+const LoadingContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 200px;
+  font-size: 1.2rem;
+  color: ${colors.text.secondary};
+`;
 
-const gradesData: GradeData[] = [
-  {
-    subject: "국어",
-    score: 92,
-    grade: "A",
-    semester: "2025-1학기",
-  },
-  {
-    subject: "수학",
-    score: 88,
-    grade: "B+",
-    semester: "2025-1학기",
-  },
-  {
-    subject: "영어",
-    score: 95,
-    grade: "A+",
-    semester: "2025-1학기",
-  },
-  {
-    subject: "과학",
-    score: 90,
-    grade: "A",
-    semester: "2025-1학기",
-  },
-  {
-    subject: "사회",
-    score: 87,
-    grade: "B+",
-    semester: "2025-1학기",
-  },
-  {
-    subject: "국어",
-    score: 85,
-    grade: "B+",
-    semester: "2024-2학기",
-  },
-  {
-    subject: "수학",
-    score: 78,
-    grade: "C+",
-    semester: "2024-2학기",
-  },
-  {
-    subject: "영어",
-    score: 92,
-    grade: "A",
-    semester: "2024-2학기",
-  },
-  {
-    subject: "과학",
-    score: 88,
-    grade: "B+",
-    semester: "2024-2학기",
-  },
-  {
-    subject: "사회",
-    score: 80,
-    grade: "B",
-    semester: "2024-2학기",
-  },
-];
-
-// 스타일 컴포넌트
+// 성적표 컨테이너
 const GradesContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -202,28 +137,60 @@ const ChartContainer = styled.div`
   margin-top: 1rem;
 `;
 
-const StudentGradesPage: React.FC = () => {
+// 성적관리 페이지
+const StudentGradesPage = () => {
+  // 상태 관리
   const [selectedSemester, setSelectedSemester] = useState(semesterOptions[0]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [gradesData, setGradesData] = useState<GradeData[]>([]);
+  const [error, setError] = useState<string | null>(null);
   
-  // 선택된 학기의 성적 필터링
-  const filteredGrades = gradesData.filter(
-    (grade) => grade.semester === selectedSemester
-  );
+  // Zustand에서 사용자 정보 가져오기
+  const userInfo = useUserStore((state) => state.userInfo);
   
-  // 차트 데이터 생성
-  const chartData = filteredGrades.map((grade) => ({
-    subject: grade.subject,
-    '내 점수': grade.score,
-    fullMark: 100,
+  // 성적 데이터 불러오기
+  useEffect(() => {
+    const fetchGrades = async () => {
+      if (!userInfo?.userId) return;
+      
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const data = await getStudentGrades(String(userInfo.userId), selectedSemester);
+        setGradesData(data);
+      } catch (err) {
+        console.error('성적 정보 로드 오류:', err);
+        setError('성적 정보를 불러오는데 실패했습니다.');
+        // 데이터가 없는 경우 임시로 비어있는 배열 설정
+        setGradesData([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchGrades();
+  }, [userInfo, selectedSemester]);
+  
+  // 레이더 차트 데이터 변환
+  const radarData = gradesData.map(item => ({
+    subject: item.subject,
+    score: item.score,
   }));
-
+  
+  // 학기 변경 핸들러
+  const handleSemesterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedSemester(e.target.value);
+  };
+  
   return (
-    <DashboardLayout
-      userName={userData.name}
-      userRole={userData.role}
-      userInfo={`${userData.grade}학년 ${userData.class}반 ${userData.number}번`}
+    <DashboardLayout 
+      userName={userInfo?.name || "학생"}
+      userRole="학생"
+      userInfo={userInfo?.roleInfo || ""}
+      notificationCount={2}
     >
-      <StudentSidebar isCollapsed={false} />
+      <StudentSidebar {...{ isCollapsed: false }} />
       
       <ContentContainer>
         <GradesContainer>
@@ -233,7 +200,7 @@ const StudentGradesPage: React.FC = () => {
             <SemesterLabel>학기 선택:</SemesterLabel>
             <SemesterSelect
               value={selectedSemester}
-              onChange={(e) => setSelectedSemester(e.target.value)}
+              onChange={handleSemesterChange}
             >
               {semesterOptions.map((semester) => (
                 <option key={semester} value={semester}>
@@ -246,47 +213,63 @@ const StudentGradesPage: React.FC = () => {
           <DashboardGrid>
             <DashboardCard gridColumn="span 8">
               <CardTitle>성적 목록</CardTitle>
-              <GradesTable>
-                <Table>
-                  <TableHeader>
-                    <tr>
-                      <TableHeaderCell>과목</TableHeaderCell>
-                      <TableHeaderCell>점수</TableHeaderCell>
-                      <TableHeaderCell>등급</TableHeaderCell>
-                    </tr>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredGrades.map((grade, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{grade.subject}</TableCell>
-                        <TableCell>{grade.score}</TableCell>
-                        <TableCell>
-                          <GradeIndicator grade={grade.grade}>{grade.grade}</GradeIndicator>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </GradesTable>
+              {isLoading ? (
+                <LoadingContainer>성적 정보를 불러오는 중입니다...</LoadingContainer>
+              ) : error ? (
+                <LoadingContainer>{error}</LoadingContainer>
+              ) : gradesData.length === 0 ? (
+                <LoadingContainer>이 학기의 성적 정보가 없습니다.</LoadingContainer>
+              ) : (
+                <GradesTable>
+                  <Table>
+                    <TableHeader>
+                      <tr>
+                        <TableHeaderCell>과목</TableHeaderCell>
+                        <TableHeaderCell>점수</TableHeaderCell>
+                        <TableHeaderCell>등급</TableHeaderCell>
+                      </tr>
+                    </TableHeader>
+                    <TableBody>
+                      {gradesData.map((grade, index) => (
+                        <TableRow key={grade.id || index}>
+                          <TableCell>{grade.subject}</TableCell>
+                          <TableCell>{grade.score}</TableCell>
+                          <TableCell>
+                            <GradeIndicator grade={grade.grade}>{grade.grade}</GradeIndicator>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </GradesTable>
+              )}
             </DashboardCard>
             
             <DashboardCard gridColumn="span 4">
               <CardTitle>성적 분포도</CardTitle>
               <ChartContainer>
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart outerRadius="80%" data={chartData}>
-                    <PolarGrid />
-                    <PolarAngleAxis dataKey="subject" />
-                    <PolarRadiusAxis angle={30} domain={[0, 100]} />
-                    <Radar
-                      name="내 점수"
-                      dataKey="내 점수"
-                      stroke={colors.primary.main}
-                      fill={colors.primary.main}
-                      fillOpacity={0.6}
-                    />
-                  </RadarChart>
-                </ResponsiveContainer>
+                {isLoading ? (
+                  <LoadingContainer>성적 정보를 불러오는 중입니다...</LoadingContainer>
+                ) : error ? (
+                  <LoadingContainer>{error}</LoadingContainer>
+                ) : gradesData.length === 0 ? (
+                  <LoadingContainer>이 학기의 성적 정보가 없습니다.</LoadingContainer>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart outerRadius="80%" data={radarData}>
+                      <PolarGrid />
+                      <PolarAngleAxis dataKey="subject" />
+                      <PolarRadiusAxis angle={30} domain={[0, 100]} />
+                      <Radar
+                        name="내 점수"
+                        dataKey="score"
+                        stroke={colors.primary.main}
+                        fill={colors.primary.main}
+                        fillOpacity={0.6}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                )}
               </ChartContainer>
             </DashboardCard>
           </DashboardGrid>
