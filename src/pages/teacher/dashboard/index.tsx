@@ -10,9 +10,7 @@ import {
 } from "./styles/TeacherDashboard.styles";
 import styled from "@emotion/styled";
 import { colors } from "../../../components/common/Common.styles";
-
-// 데이터 임포트
-import { userData } from "../../../constants/dashboard/teacherDashboardData";
+import { useUserStore } from "../../../stores/userStore";
 
 // 알림 데이터 타입 정의
 interface NotificationData {
@@ -137,11 +135,31 @@ const NavDescription = styled.p`
 
 // 교사 대시보드 컴포넌트
 const TeacherDashboard = () => {
+  // Zustand 사용자 정보 가져오기
+  const userInfo = useUserStore((state) => state.userInfo);
+  
+  // 콘솔 로그 추가
+  console.log("교사 대시보드 - Zustand에 저장된 사용자 정보:", userInfo);
+  
+  // 사용자 정보가 없는 경우 로딩 표시
+  if (!userInfo) {
+    return (
+      <DashboardLayout
+        userName="로딩 중..."
+        userRole="교사"
+        userInfo="정보를 불러오는 중입니다."
+        notificationCount={0}
+      >
+        <div>사용자 정보를 불러오는 중입니다...</div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout
-      userName={userData.name}
-      userRole={userData.role}
-      userInfo={`${userData.subject} 담당`}
+      userName={userInfo.name}
+      userRole={userInfo.userType === "TEACHER" ? "교사" : "사용자"}
+      userInfo={userInfo.roleInfo || "과목 정보 없음"}
       notificationCount={2}
     >
       <TeacherSidebar isCollapsed={false} />
