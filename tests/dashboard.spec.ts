@@ -1,33 +1,14 @@
 import { test, expect } from '@playwright/test';
 
-// 배포 환경을 고려한 기본 URL 확인 함수
-async function getBaseUrl(page) {
-  const url = page.url();
-  if (url.includes('softwaredesign.vercel.app')) {
-    return 'https://softwaredesign.vercel.app';
-  }
-  return 'http://localhost:5173';
-}
-
 /**
- * 로그인 상태 모의 설정 함수 - localStorage 직접 접근 대신 쿠키와 API 모킹 사용
+ * 로그인 상태 모의 설정 함수 - localStorage 활용하여 인증 설정
  */
 async function setupAuthenticatedState(page) {
-  const baseUrl = await getBaseUrl(page);
-
-  // 쿠키 설정 (localStorage 대신)
-  await page.context().addCookies([
-    {
-      name: 'accessToken',
-      value: 'test_access_token',
-      url: baseUrl,
-    },
-    {
-      name: 'refreshToken',
-      value: 'test_refresh_token',
-      url: baseUrl,
-    },
-  ]);
+  // localStorage에 토큰 설정 (쿠키 대신)
+  await page.evaluate(() => {
+    localStorage.setItem('accessToken', 'test_access_token');
+    localStorage.setItem('refreshToken', 'test_refresh_token');
+  });
   
   // API 응답 모킹: 사용자 정보
   await page.route('**/api/user/info', route => {
@@ -92,8 +73,6 @@ test.describe('대시보드 로딩 테스트', () => {
   });
   
   test('교사 대시보드 페이지가 올바르게 로드되는지 확인', async ({ page }) => {
-    const baseUrl = await getBaseUrl(page);
-
     // API 응답 모킹: 교사 사용자 정보
     await page.route('**/api/user/info', route => {
       route.fulfill({
@@ -112,19 +91,11 @@ test.describe('대시보드 로딩 테스트', () => {
       });
     });
 
-    // 쿠키 설정 (교사 계정)
-    await page.context().addCookies([
-      {
-        name: 'accessToken',
-        value: 'teacher_test_token',
-        url: baseUrl,
-      },
-      {
-        name: 'refreshToken',
-        value: 'teacher_test_refresh_token',
-        url: baseUrl,
-      },
-    ]);
+    // localStorage에 토큰 설정 (교사 계정)
+    await page.evaluate(() => {
+      localStorage.setItem('accessToken', 'teacher_test_token');
+      localStorage.setItem('refreshToken', 'teacher_test_refresh_token');
+    });
     
     // 교사 대시보드로 이동
     await page.goto('/teacher/dashboard');
