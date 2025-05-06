@@ -41,6 +41,7 @@ const UserAuthModal: React.FC<UserAuthModalProps> = (props) => {
         isOpen={props.isOpen}
         onClose={props.onClose}
         onSubmit={props.onSubmit}
+        kakaoToken={props.kakaoToken}
       />
     );
   }
