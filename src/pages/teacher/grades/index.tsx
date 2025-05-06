@@ -33,18 +33,19 @@ import {
 
 // 임시 교사 데이터
 const teacherData = {
-  name: "권도훈",
+  name: "박지성",
   role: "교사",
   subject: "수학",
+  roleInfo: "2학년 3반 담임"
 };
 
 // 임시 학생 목록
 const students = [
-  { id: 1, name: "김민준", grade: 2, classNum: 3, number: 12 },
-  { id: 2, name: "이서연", grade: 2, classNum: 3, number: 15 },
-  { id: 3, name: "박지훈", grade: 2, classNum: 3, number: 8 },
-  { id: 4, name: "최은지", grade: 2, classNum: 3, number: 21 },
-  { id: 5, name: "정우진", grade: 2, classNum: 3, number: 5 },
+  { id: 1, name: "권도훈", grade: 2, classNum: 3, number: 12 },
+  { id: 2, name: "김민준", grade: 2, classNum: 3, number: 15 },
+  { id: 3, name: "이서연", grade: 2, classNum: 3, number: 8 },
+  { id: 4, name: "박지훈", grade: 2, classNum: 3, number: 21 },
+  { id: 5, name: "최예은", grade: 2, classNum: 3, number: 5 },
 ];
 
 // 학기 옵션
@@ -71,10 +72,30 @@ const subjects = [
 
 // 임시 성적 데이터
 const initialGradesData = {
-  1: {
-    // 학생 ID
+  1: { // 권도훈 학생
+    "2-1": { // 학기
+      subjects: {
+        1: { score: 92, grade: "A" }, // 국어
+        2: { score: 89, grade: "B" }, // 영어
+        3: { score: 95, grade: "A" }, // 수학
+        4: { score: 94, grade: "A" }, // 과학
+        5: { score: 88, grade: "B" }, // 사회
+        6: { score: 47, grade: "A" }, // 음악
+        7: { score: 45, grade: "A" }, // 미술
+        8: { score: 48, grade: "A" }, // 체육
+      },
+      attendance: {
+        present: 97,
+        absent: 0,
+        late: 2,
+        earlyLeave: 1,
+      },
+      comments:
+        "수학과 과학 분야에 뛰어난 재능을 보이며 특히 프로그래밍 관련 활동에서 우수한 성과를 보임. 코딩 대회에서 수상한 경력이 있음.",
+    },
+  },
+  2: { // 김민준 학생
     "2-1": {
-      // 학기
       subjects: {
         1: { score: 85, grade: "B" }, // 국어
         2: { score: 92, grade: "A" }, // 영어
@@ -642,7 +663,8 @@ const TeacherGradesPage: React.FC = () => {
     <DashboardLayout
       userName={teacherData.name}
       userRole={teacherData.role}
-      userInfo={teacherData.subject}
+      userInfo={teacherData.roleInfo}
+      notificationCount={3}
     >
       <TeacherSidebar isCollapsed={false} />
 
