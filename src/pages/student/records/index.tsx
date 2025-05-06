@@ -13,7 +13,7 @@ import { useUserStore } from "../../../stores/userStore";
 
 // 임시 유저 데이터
 const userData = {
-  name: "김민준",
+  name: "권도훈",
   role: "학생",
   grade: 2,
   class: 3,
@@ -31,15 +31,15 @@ const recordCategories = [
 
 // 학생 기본 정보
 const studentInfo = {
-  name: "김민준",
-  birthDate: "2009-05-15",
+  name: "권도훈",
+  birthDate: "2009-07-22",
   gender: "남",
-  address: "서울시 강남구 테헤란로 123",
+  address: "서울시 강남구 역삼로 123",
   contact: "010-1234-5678",
-  parentName: "김철수",
+  parentName: "권영수",
   parentContact: "010-9876-5432",
   admissionDate: "2023-03-02",
-  schoolName: "한국중학교",
+  schoolName: "소프트웨어디자인고등학교",
   grade: 2,
   class: 3,
   studentNumber: 12,
@@ -49,62 +49,65 @@ const studentInfo = {
 const attendanceRecord = {
   year: "2024",
   semester: "1학기",
-  attendanceDays: 92,
-  absenceDays: 2,
-  lateDays: 3,
+  attendanceDays: 97,
+  absenceDays: 0,
+  lateDays: 2,
   earlyLeaveDays: 1,
-  sickLeaveDays: 2,
+  sickLeaveDays: 0,
   details: [
-    { date: "2024-03-15", type: "absent", reason: "병결", description: "감기로 인한 결석" },
-    { date: "2024-04-22", type: "late", reason: "교통 지연", description: "버스 지연으로 인한 지각" },
-    { date: "2024-05-08", type: "late", reason: "기타", description: "교문 통과 후 지각" },
-    { date: "2024-05-17", type: "late", reason: "기타", description: "교문 통과 후 지각" },
-    { date: "2024-06-02", type: "earlyLeave", reason: "병가", description: "치과 진료로 인한 조퇴" },
-    { date: "2024-06-10", type: "absent", reason: "병결", description: "병원 진료로 인한 결석" },
+    { date: "2024-04-05", type: "late", reason: "교통 지연", description: "교통 지연으로 인한 지각" },
+    { date: "2024-05-12", type: "late", reason: "늦잠", description: "늦잠으로 인한 지각" },
+    { date: "2024-05-20", type: "earlyLeave", reason: "병원 방문", description: "병원 방문으로 인한 조퇴" },
   ],
 };
 
 // 행동 발달 기록
 const behavioralRecord = [
   {
-    date: "2024-04-10",
-    category: "수업 태도",
-    description: "수업에 적극적으로 참여하고 질문을 많이 하는 모습이 인상적입니다.",
-    teacher: "이지원",
+    date: "2024-04-15",
+    category: "리더십",
+    description: "그룹 프로젝트에서 리더십을 발휘하여 팀원들을 잘 이끌었습니다.",
+    teacher: "박지성",
   },
   {
-    date: "2024-05-15",
-    category: "교우 관계",
-    description: "친구들과 원활하게 소통하며 학급 활동에 적극적으로 참여합니다.",
-    teacher: "박준호",
+    date: "2024-05-10",
+    category: "창의적 사고",
+    description: "문제 해결 능력이 뛰어나며 창의적인 아이디어를 많이 제시합니다.",
+    teacher: "김승환",
   },
   {
-    date: "2024-06-20",
-    category: "학습 발달",
-    description: "자기주도적 학습 태도가 많이 향상되었으며, 특히 수학 과목에 대한 흥미가 높아졌습니다.",
-    teacher: "이지원",
+    date: "2024-06-02",
+    category: "분석적 사고",
+    description: "컴퓨터 과학 관련 창의적 사고와 분석적 사고 능력이 뛰어납니다.",
+    teacher: "이미란",
   },
 ];
 
 // 특기 사항
 const specialNotes = [
   {
-    date: "2024-03-20",
+    date: "2024-03-15",
+    category: "진로 희망",
+    description: "소프트웨어 개발자(인공지능 분야)",
+    teacher: "김승환",
+  },
+  {
+    date: "2024-04-20",
     category: "교과 특기",
-    description: "영어 회화에 뛰어난 능력을 보이며, 교내 영어 토론 대회에서 두각을 나타냈습니다.",
-    teacher: "김수진",
+    description: "수학과 과학 분야에 특별한 재능을 보임. 특히 알고리즘 문제 해결 능력이 뛰어남.",
+    teacher: "박지성",
   },
   {
-    date: "2024-04-15",
-    category: "예체능 특기",
-    description: "음악 시간에 피아노 연주 실력이 뛰어나며, 교내 합창부에서 중요한 역할을 담당하고 있습니다.",
-    teacher: "정민석",
+    date: "2024-05-17",
+    category: "수상 경력",
+    description: "2024년 전국 청소년 코딩 대회 우수상 수상",
+    teacher: "이미란",
   },
   {
-    date: "2024-05-25",
-    category: "진로 적성",
-    description: "과학 분야에 관심이 많으며, 특히 천문학 관련 도서를 자주 읽고 관련 실험에 적극적으로 참여합니다.",
-    teacher: "이지원",
+    date: "2024-06-10",
+    category: "자격증",
+    description: "정보처리기능사 취득",
+    teacher: "김승환",
   },
 ];
 
@@ -113,30 +116,30 @@ const activityRecord = [
   {
     date: "2024-03-15",
     category: "동아리",
-    title: "과학 탐구 동아리",
-    description: "화학 실험 활동에 참여하여 산과 염기의 반응에 대한 탐구를 진행하였으며, 관련 보고서를 작성하였습니다.",
-    teacher: "정민석",
+    title: "소프트웨어 동아리 'Code Masters'",
+    description: "학교 소프트웨어 개발 동아리에서 웹 개발 팀장으로 활동 중.",
+    teacher: "박지성",
   },
   {
-    date: "2024-04-10",
-    category: "봉사활동",
-    title: "지역사회 환경 정화",
-    description: "학교 인근 공원에서 쓰레기 줍기 봉사활동에 참여하였으며, 총 4시간의 봉사 시간을 기록하였습니다.",
-    teacher: "한지연",
-  },
-  {
-    date: "2024-05-20",
+    date: "2024-05-17",
     category: "대회",
-    title: "교내 영어 말하기 대회",
-    description: "교내 영어 말하기 대회에 참가하여 '환경 보호'를 주제로 발표하였으며, 장려상을 수상하였습니다.",
-    teacher: "김수진",
+    title: "전국 고교 프로그래밍 경진대회",
+    description: "알고리즘 문제 해결 및 창의적 소프트웨어 설계 경진대회 참가",
+    teacher: "김승환",
   },
   {
-    date: "2024-06-15",
-    category: "진로 체험",
-    title: "대학 캠퍼스 탐방",
-    description: "서울대학교 자연과학대학 캠퍼스 탐방 프로그램에 참여하여 물리학과 생물학 실험실을 견학하였습니다.",
-    teacher: "박준호",
+    date: "2024-07-15",
+    category: "직업 체험",
+    title: "IT 기업 인턴십 프로그램",
+    description: "여름방학 기간 동안 네이버 커넥트 인턴십 프로그램 참가 예정",
+    teacher: "이미란",
+  },
+  {
+    date: "2024-04-20",
+    category: "프로젝트",
+    title: "학교 홈페이지 리뉴얼 프로젝트",
+    description: "학교 공식 홈페이지 리뉴얼 작업에 UI/UX 디자인 및 프론트엔드 개발 참여",
+    teacher: "김승환",
   },
 ];
 
@@ -533,9 +536,9 @@ const StudentRecordsPage: React.FC = () => {
 
   return (
     <DashboardLayout
-      userName={userInfo.name || "학생"}
+      userName="권도훈"
       userRole="학생"
-      userInfo={userInfo.roleInfo || ""}
+      userInfo="2학년 3반 12번"
       notificationCount={2}
     >
       <StudentSidebar {...{ isCollapsed: false }} />

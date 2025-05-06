@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import styled from "@emotion/styled";
 import { colors } from "../common/Common.styles";
+import { useUserStore } from "../../stores/userStore";
 
 // 사이드바 컨테이너
 const SidebarContainer = styled.div`
@@ -89,6 +90,29 @@ const MenuBadge = styled.span<{ isCollapsed: boolean }>`
   justify-content: center;
 `;
 
+// 유저 정보 섹션
+const UserInfoSection = styled.div<{ isCollapsed: boolean }>`
+  padding: ${(props) => (props.isCollapsed ? "1rem 0" : "1rem")};
+  display: flex;
+  flex-direction: column;
+  align-items: ${(props) => (props.isCollapsed ? "center" : "flex-start")};
+  margin-bottom: 1rem;
+  border-bottom: 1px solid ${colors.grey[200]};
+`;
+
+const UserName = styled.div<{ isCollapsed: boolean }>`
+  font-weight: 600;
+  color: ${colors.text.primary};
+  margin-bottom: ${(props) => (props.isCollapsed ? "0.5rem" : "0.25rem")};
+  ${(props) => props.isCollapsed && "display: none;"}
+`;
+
+const UserRole = styled.div<{ isCollapsed: boolean }>`
+  font-size: 0.8rem;
+  color: ${colors.text.secondary};
+  ${(props) => props.isCollapsed && "display: none;"}
+`;
+
 interface StudentSidebarProps {
   isCollapsed: boolean;
   isParent?: boolean;
@@ -100,6 +124,9 @@ export const StudentSidebar: React.FC<StudentSidebarProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // 유저 스토어에서 사용자 정보 가져오기
+  const userInfo = useUserStore((state) => state.userInfo);
 
   // 현재 활성화된 메뉴 확인
   const isActive = (path: string) => {
@@ -108,6 +135,16 @@ export const StudentSidebar: React.FC<StudentSidebarProps> = ({
 
   return (
     <SidebarContainer>
+      {/* 유저 정보 섹션 */}
+      <UserInfoSection isCollapsed={isCollapsed}>
+        <UserName isCollapsed={isCollapsed}>
+          {userInfo?.name || "권도훈"}
+        </UserName>
+        <UserRole isCollapsed={isCollapsed}>
+          {isParent ? "학부모" : "학생"} {userInfo?.roleInfo || "2학년 3반 12번"}
+        </UserRole>
+      </UserInfoSection>
+    
       <MenuGroup>
         <MenuGroupTitle isCollapsed={isCollapsed}>메인</MenuGroupTitle>
         <MenuItem
