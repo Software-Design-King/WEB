@@ -16,6 +16,7 @@ const LoginPage = lazy(() => import("./pages/auth/login"));
 const StudentDashboard = lazy(() => import("./pages/student/dashboard"));
 const TeacherDashboard = lazy(() => import("./pages/teacher/dashboard"));
 const KakaoCallbackPage = lazy(() => import("./pages/auth/kakao-callback"));
+const ClassroomStudents = lazy(() => import("./pages/teacher/students"));
 
 // 새로 추가된 페이지 컴포넌트
 const StudentGradesPage = lazy(() => import("./pages/student/grades"));
@@ -291,6 +292,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole="TEACHER">
             <TeacherConsultationPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/teacher/students"
+        element={
+          <ProtectedRoute requiredRole="TEACHER">
+            <ClassroomStudents />
           </ProtectedRoute>
         }
       />
