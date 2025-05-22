@@ -216,26 +216,33 @@ const SignupModal: React.FC<SignupModalProps> = ({
             }반`,
             number: userInfoData.number || 0,
             userType: userInfoData.userType || selectedRole,
+            userId: userInfoData.userId || 0,
           };
 
+          // 사용자 정보 저장 및 로컬 스토리지 강제 업데이트
           setUserInfo(userInfo);
+          // 로컬 스토리지에 직접 저장하여 즉시 반영되도록 함
+          localStorage.setItem("user-storage", JSON.stringify({userInfo}));
           console.log("사용자 정보 저장:", userInfo);
 
           // 모달 닫기 및 폼 초기화
           reset();
           onClose();
-
-          // 역할에 따라 리다이렉트
-          if (
-            userInfo.userType === "STUDENT" ||
-            userInfo.userType === "PARENT"
-          ) {
-            navigate("/student/dashboard");
-          } else if (userInfo.userType === "TEACHER") {
-            navigate("/teacher/dashboard");
-          } else {
-            navigate("/");
-          }
+          
+          // 일정 시간 후 리다이렉트하여 상태 업데이트 완료 보장
+          setTimeout(() => {
+            // 역할에 따라 리다이렉트
+            if (
+              userInfo.userType === "STUDENT" ||
+              userInfo.userType === "PARENT"
+            ) {
+              navigate("/student/dashboard");
+            } else if (userInfo.userType === "TEACHER") {
+              navigate("/teacher/dashboard");
+            } else {
+              navigate("/");
+            }
+          }, 300); // 300ms 지연으로 상태 업데이트 완료 보장
         } catch (err) {
           console.error("사용자 정보 저장 오류:", err);
         }

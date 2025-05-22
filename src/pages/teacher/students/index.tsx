@@ -7,68 +7,29 @@ import { colors } from "../../../components/common/Common.styles";
 import { ClassroomStudentsStyles } from "./ClassroomStudents.styles";
 import BatchUpload from "./BatchUpload";
 import { AnimatePresence, motion } from "framer-motion";
+import axios from "axios";
+// API 응답 인터페이스
+interface StudentListResponse {
+  code: number;
+  message: string;
+  data: {
+    grade: number;
+    students: Student[];
+  }
+}
 
 // 학생 정보 인터페이스
 interface Student {
   id: number; // 내부 고유 ID
-  studentNumber: string; // 번호 (이전 studentId)
   name: string;
-  contact: string;
-  note: string;
-  status?: 'active' | 'inactive';
+  // 추가 정보를 위한 필드
+  studentNumber?: string; 
+  contact?: string;
+  note?: string;
+  status?: "active" | "inactive";
 }
 
-// 임시 학생 데이터
-const initialStudents: Student[] = [
-  {
-    id: 1,
-    studentNumber: "1",
-    name: "권도훈",
-    contact: "010-1234-5678",
-    note: "프로그래밍 특기생, 코딩대회 수상",
-    status: "active",
-  },
-  {
-    id: 2,
-    studentNumber: "2",
-    name: "김민준",
-    contact: "010-2345-6789",
-    note: "과학 경시대회 참가 예정",
-    status: "active",
-  },
-  {
-    id: 3,
-    studentNumber: "3",
-    name: "이서연",
-    contact: "010-3456-7890",
-    note: "미술 특기생",
-    status: "active",
-  },
-  {
-    id: 4,
-    studentNumber: "4",
-    name: "박지훈",
-    contact: "010-4567-8901",
-    note: "전교 회장",
-    status: "active",
-  },
-  {
-    id: 5,
-    studentNumber: "5",
-    name: "최예은",
-    contact: "010-5678-9012",
-    note: "",
-    status: "active",
-  },
-  {
-    id: 6,
-    studentNumber: "6",
-    name: "정우진",
-    contact: "010-9012-3456",
-    note: "수학 경시대회 참가 예정",
-    status: "active",
-  },
-];
+// 제거됨: 더 이상 사용하지 않는 임시 학생 데이터
 
 const ClassroomStudents = () => {
   // Zustand 스토어에서 사용자 정보 가져오기
@@ -76,15 +37,18 @@ const ClassroomStudents = () => {
   const isLoading = useUserStore((state) => state.isLoading);
 
   // 학생 목록 상태 관리
-  const [students, setStudents] = useState<Student[]>(initialStudents);
-  const [filteredStudents, setFilteredStudents] = useState<Student[]>(initialStudents);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBatchMode, setIsBatchMode] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'card'>('list');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<"list" | "card">("list");
+  const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const studentsPerPage = 10;
-  
+  const [grade, setGrade] = useState<number | null>(null);
+  const [isApiLoading, setIsApiLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const [newStudent, setNewStudent] = useState<Omit<Student, "id">>({
     studentNumber: "",
     name: "",
@@ -93,8 +57,8 @@ const ClassroomStudents = () => {
     status: "active",
   });
 
-  // 학급 정보 (예: "1학년 1반")
-  const classInfo = userInfo?.roleInfo || "학급 정보 없음";
+  // 학급 정보 (학년 포함)
+  const classInfo = grade ? `${grade}학년 ${userInfo?.roleInfo || ""}` : userInfo?.roleInfo || "학급 정보 없음";
 
   // 모달 닫기
   const handleCloseModal = () => {
@@ -137,60 +101,98 @@ const ClassroomStudents = () => {
         ...newStudent,
       },
     ];
-    
+
     setStudents(updatedStudents);
     updateFilteredStudents(updatedStudents);
     handleCloseModal();
   };
-  
+
   // 일괄 학생 추가
   const handleBatchUpload = (batchStudents: Omit<Student, "id">[]) => {
     if (batchStudents.length === 0) return;
-    
-    let lastId = students.length > 0 ? Math.max(...students.map((s) => s.id)) : 0;
-    
-    const newStudents = batchStudents.map(student => ({
+
+    let lastId =
+      students.length > 0 ? Math.max(...students.map((s) => s.id)) : 0;
+
+    const newStudents = batchStudents.map((student) => ({
       ...student,
       id: ++lastId,
-      status: 'active' as const
+      status: "active" as const,
     }));
-    
+
     const updatedStudents = [...students, ...newStudents];
     setStudents(updatedStudents);
     updateFilteredStudents(updatedStudents);
     handleCloseModal();
   };
-  
+
   // 필터링 및 검색 기능
   const updateFilteredStudents = (studentList: Student[] = students) => {
     if (!searchQuery) {
       setFilteredStudents(studentList);
       return;
     }
-    
+
     const query = searchQuery.toLowerCase();
-    const filtered = studentList.filter(student => 
-      student.name.toLowerCase().includes(query) || 
-      student.studentNumber.toLowerCase().includes(query) ||
-      student.contact.toLowerCase().includes(query) ||
-      student.note.toLowerCase().includes(query)
+    const filtered = studentList.filter(
+      (student) =>
+        student.name.toLowerCase().includes(query) ||
+        student.studentNumber.toLowerCase().includes(query) ||
+        student.contact.toLowerCase().includes(query) ||
+        student.note.toLowerCase().includes(query)
     );
-    
+
     setFilteredStudents(filtered);
   };
-  
+
+  // API에서 학생 목록 가져오기
+  const fetchStudents = async () => {
+    setIsApiLoading(true);
+    setError(null);
+    try {
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "https://www.software-design-king.p-e.kr";
+      const response = await axios.get<StudentListResponse>(`${apiBaseUrl}/student/list`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.data.code === 20000) {
+        console.log('학생 목록 조회 성공:', response.data);
+        setGrade(response.data.data.grade);
+        setStudents(response.data.data.students);
+        setFilteredStudents(response.data.data.students);
+      } else {
+        setError(`데이터를 불러오는데 실패했습니다: ${response.data.message}`);
+      }
+    } catch (err) {
+      console.error('학생 목록을 불러오는데 실패했습니다:', err);
+      setError('학생 목록을 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setIsApiLoading(false);
+    }
+  };
+
+  // 컴포넌트 마운트 시 학생 목록 가져오기
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
   // 검색 쿼리 변경 시 필터링 적용
   useEffect(() => {
     updateFilteredStudents();
     // 검색 결과가 바뀌면 1페이지로 리셋
     setCurrentPage(1);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
-  
+
   // 페이지네이션 처리
   const indexOfLastStudent = currentPage * studentsPerPage;
   const indexOfFirstStudent = indexOfLastStudent - studentsPerPage;
-  const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastStudent);
+  const currentStudents = filteredStudents.slice(
+    indexOfFirstStudent,
+    indexOfLastStudent
+  );
   const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
 
   // 학생 삭제
@@ -232,10 +234,12 @@ const ClassroomStudents = () => {
             {classInfo} 학생 목록
           </ClassroomStudentsStyles.Title>
           <ClassroomStudentsStyles.ButtonGroup>
-            <ClassroomStudentsStyles.AddButton onClick={() => {
-              setIsBatchMode(false);
-              setIsModalOpen(true);
-            }}>
+            <ClassroomStudentsStyles.AddButton
+              onClick={() => {
+                setIsBatchMode(false);
+                setIsModalOpen(true);
+              }}
+            >
               <svg
                 width="16"
                 height="16"
@@ -250,10 +254,12 @@ const ClassroomStudents = () => {
               </svg>
               학생 추가
             </ClassroomStudentsStyles.AddButton>
-            <ClassroomStudentsStyles.DropdownButton onClick={() => {
-              setIsBatchMode(true);
-              setIsModalOpen(true);
-            }}>
+            <ClassroomStudentsStyles.DropdownButton
+              onClick={() => {
+                setIsBatchMode(true);
+                setIsModalOpen(true);
+              }}
+            >
               <svg
                 width="16"
                 height="16"
@@ -270,7 +276,7 @@ const ClassroomStudents = () => {
             </ClassroomStudentsStyles.DropdownButton>
           </ClassroomStudentsStyles.ButtonGroup>
         </ClassroomStudentsStyles.Header>
-        
+
         {/* 검색 및 뷰 모드 전환 */}
         <ClassroomStudentsStyles.Toolbar>
           <ClassroomStudentsStyles.SearchBox>
@@ -290,14 +296,14 @@ const ClassroomStudents = () => {
               type="text"
               placeholder="학생 검색..."
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </ClassroomStudentsStyles.SearchBox>
-          
+
           <ClassroomStudentsStyles.ViewTabs>
             <ClassroomStudentsStyles.ViewTab
-              active={viewMode === 'list'}
-              onClick={() => setViewMode('list')}
+              active={viewMode === "list"}
+              onClick={() => setViewMode("list")}
             >
               <svg
                 width="16"
@@ -305,7 +311,7 @@ const ClassroomStudents = () => {
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                style={{ marginRight: '0.5rem' }}
+                style={{ marginRight: "0.5rem" }}
               >
                 <path
                   d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"
@@ -315,8 +321,8 @@ const ClassroomStudents = () => {
               목록
             </ClassroomStudentsStyles.ViewTab>
             <ClassroomStudentsStyles.ViewTab
-              active={viewMode === 'card'}
-              onClick={() => setViewMode('card')}
+              active={viewMode === "card"}
+              onClick={() => setViewMode("card")}
             >
               <svg
                 width="16"
@@ -324,7 +330,7 @@ const ClassroomStudents = () => {
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                style={{ marginRight: '0.5rem' }}
+                style={{ marginRight: "0.5rem" }}
               >
                 <path
                   d="M3 11h8V3H3v8zm2-6h4v4H5V5zm8 12h8v-8h-8v8zm2-6h4v4h-4v-4zM3 21h8v-8H3v8zm2-6h4v4H5v-4zm8-10v8h8V3h-8zm6 6h-4V5h4v4z"
@@ -338,7 +344,7 @@ const ClassroomStudents = () => {
 
         {/* 목록 뷰 및 카드 뷰 전환 */}
         <AnimatePresence mode="wait">
-          {viewMode === 'list' ? (
+          {viewMode === "list" ? (
             <motion.div
               key="list-view"
               initial={{ opacity: 0, y: 10 }}
@@ -377,13 +383,13 @@ const ClassroomStudents = () => {
                           {indexOfFirstStudent + index + 1}
                         </ClassroomStudentsStyles.TableCell>
                         <ClassroomStudentsStyles.TableCell>
-                          {student.studentNumber}
+                          {student.studentNumber || "-"}
                         </ClassroomStudentsStyles.TableCell>
                         <ClassroomStudentsStyles.TableCell>
                           {student.name}
                         </ClassroomStudentsStyles.TableCell>
                         <ClassroomStudentsStyles.TableCell>
-                          {student.contact}
+                          {student.contact || "-"}
                         </ClassroomStudentsStyles.TableCell>
                         <ClassroomStudentsStyles.TableCell>
                           {student.note || "-"}
@@ -418,10 +424,10 @@ const ClassroomStudents = () => {
                         {student.name}
                       </ClassroomStudentsStyles.CardName>
                       <ClassroomStudentsStyles.CardId>
-                        번호: {student.studentNumber}
+                        번호: {student.studentNumber || "-"}
                       </ClassroomStudentsStyles.CardId>
                     </ClassroomStudentsStyles.CardHeader>
-                    
+
                     <ClassroomStudentsStyles.CardContent>
                       <ClassroomStudentsStyles.CardDetail>
                         <ClassroomStudentsStyles.CardIcon>
@@ -442,7 +448,7 @@ const ClassroomStudents = () => {
                           {student.contact || "-"}
                         </ClassroomStudentsStyles.CardText>
                       </ClassroomStudentsStyles.CardDetail>
-                      
+
                       <ClassroomStudentsStyles.CardDetail>
                         <ClassroomStudentsStyles.CardIcon>
                           <svg
@@ -463,7 +469,7 @@ const ClassroomStudents = () => {
                         </ClassroomStudentsStyles.CardText>
                       </ClassroomStudentsStyles.CardDetail>
                     </ClassroomStudentsStyles.CardContent>
-                    
+
                     <ClassroomStudentsStyles.CardFooter>
                       <ClassroomStudentsStyles.ActionButton
                         onClick={() => handleDeleteStudent(student.id)}
@@ -479,8 +485,29 @@ const ClassroomStudents = () => {
           )}
         </AnimatePresence>
 
+        {/* API 로딩 중 표시 */}
+        {isApiLoading && (
+          <ClassroomStudentsStyles.EmptyState>
+            <p>학생 목록을 불러오는 중입니다...</p>
+          </ClassroomStudentsStyles.EmptyState>
+        )}
+
+        {/* 에러 메시지 표시 */}
+        {error && !isApiLoading && (
+          <ClassroomStudentsStyles.EmptyState>
+            <p style={{ color: "#f44336" }}>{error}</p>
+            <ClassroomStudentsStyles.ActionButton
+              onClick={fetchStudents}
+              color="#2196f3"
+              style={{ marginTop: '1rem' }}
+            >
+              다시 시도
+            </ClassroomStudentsStyles.ActionButton>
+          </ClassroomStudentsStyles.EmptyState>
+        )}
+
         {/* 학생 없는 경우 */}
-        {filteredStudents.length === 0 && (
+        {!isApiLoading && !error && filteredStudents.length === 0 && (
           <ClassroomStudentsStyles.EmptyState>
             <svg
               width="64"
@@ -501,12 +528,12 @@ const ClassroomStudents = () => {
             )}
           </ClassroomStudentsStyles.EmptyState>
         )}
-        
+
         {/* 페이지네이션 */}
         {filteredStudents.length > 0 && totalPages > 1 && (
           <ClassroomStudentsStyles.Pagination>
             <ClassroomStudentsStyles.PageButton
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
             >
               <svg
@@ -522,7 +549,7 @@ const ClassroomStudents = () => {
                 />
               </svg>
             </ClassroomStudentsStyles.PageButton>
-            
+
             {[...Array(totalPages)].map((_, index) => (
               <ClassroomStudentsStyles.PageButton
                 key={index + 1}
@@ -532,9 +559,11 @@ const ClassroomStudents = () => {
                 {index + 1}
               </ClassroomStudentsStyles.PageButton>
             ))}
-            
+
             <ClassroomStudentsStyles.PageButton
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+              }
               disabled={currentPage === totalPages}
             >
               <svg
@@ -558,7 +587,7 @@ const ClassroomStudents = () => {
           <ClassroomStudentsStyles.ModalOverlay>
             <ClassroomStudentsStyles.Modal>
               <ClassroomStudentsStyles.ModalHeader>
-                <h3>{isBatchMode ? '학생 일괄 등록' : '학생 추가'}</h3>
+                <h3>{isBatchMode ? "학생 일괄 등록" : "학생 추가"}</h3>
                 <ClassroomStudentsStyles.CloseButton onClick={handleCloseModal}>
                   <svg
                     width="20"
@@ -577,7 +606,7 @@ const ClassroomStudents = () => {
 
               {isBatchMode ? (
                 /* 일괄 업로드 모드 */
-                <BatchUpload 
+                <BatchUpload
                   onUpload={handleBatchUpload}
                   onCancel={handleCloseModal}
                 />
@@ -642,7 +671,9 @@ const ClassroomStudents = () => {
                     >
                       취소
                     </ClassroomStudentsStyles.CancelButton>
-                    <ClassroomStudentsStyles.SaveButton onClick={handleAddStudent}>
+                    <ClassroomStudentsStyles.SaveButton
+                      onClick={handleAddStudent}
+                    >
                       저장
                     </ClassroomStudentsStyles.SaveButton>
                   </ClassroomStudentsStyles.ModalFooter>
