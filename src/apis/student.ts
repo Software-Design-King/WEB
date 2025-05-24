@@ -16,8 +16,9 @@ export interface StudentListResponse {
 
 // 학생 정보 인터페이스
 export interface Student {
-  id: number;
+  studentId: number;
   name: string;
+  studentNum?: number; // 학생 번호
 }
 
 // 학생 상세 정보 인터페이스

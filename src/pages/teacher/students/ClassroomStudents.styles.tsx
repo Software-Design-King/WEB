@@ -24,9 +24,9 @@ export const Title = styled.h1`
   margin: 0;
   position: relative;
   display: inline-block;
-  
+
   &:after {
-    content: '';
+    content: "";
     position: absolute;
     left: 0;
     bottom: -8px;
@@ -58,7 +58,7 @@ export const AddButton = styled.button`
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     transform: translateY(-1px);
   }
-  
+
   &:active {
     transform: translateY(1px);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -74,7 +74,7 @@ export const TableContainer = styled.div`
   margin-bottom: 2rem;
   transition: all 0.3s ease;
   padding: 0;
-  
+
   &:hover {
     box-shadow: 0 12px 36px rgba(0, 0, 0, 0.06);
   }
@@ -119,18 +119,18 @@ export const TableRow = styled.tr`
   cursor: pointer;
   position: relative;
   transition: all 0.2s ease;
-  
+
   &:hover {
     background-color: ${colors.primary.light}15;
     td {
       color: ${colors.primary.dark};
     }
   }
-  
+
   &:active {
     background-color: ${colors.primary.light}20;
   }
-  
+
   &:last-child td {
     border-bottom: none;
   }
@@ -296,7 +296,8 @@ export const FormGroup = styled.div`
     font-size: 0.9rem;
   }
 
-  input, textarea {
+  input,
+  textarea {
     width: 100%;
     padding: 0.75rem;
     font-size: 0.95rem;
@@ -402,7 +403,7 @@ export const CardId = styled.div`
   display: flex;
   align-items: center;
   gap: 5px;
-  
+
   span {
     font-weight: 600;
     background-color: ${colors.grey[100]};
@@ -434,7 +435,7 @@ export const StudentCard = styled.div`
     box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
     border-color: ${colors.grey[200]};
   }
-  
+
   &:active {
     transform: translateY(-2px);
   }
@@ -463,18 +464,21 @@ export const PageButton = styled.button<{ active?: boolean }>`
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 8px;
-  font-weight: ${(props) => (props.active ? '600' : '500')};
+  font-weight: ${(props) => (props.active ? "600" : "500")};
   cursor: pointer;
   transition: all 0.2s;
-  
-  background-color: ${(props) => (props.active ? colors.primary.main : 'white')};
-  color: ${(props) => (props.active ? 'white' : colors.text.primary)};
-  border: 1px solid ${(props) => (props.active ? colors.primary.main : colors.grey[200])};
-  
+
+  background-color: ${(props) =>
+    props.active ? colors.primary.main : "white"};
+  color: ${(props) => (props.active ? "white" : colors.text.primary)};
+  border: 1px solid
+    ${(props) => (props.active ? colors.primary.main : colors.grey[200])};
+
   &:hover {
-    background-color: ${(props) => (props.active ? colors.primary.dark : colors.grey[100])};
+    background-color: ${(props) =>
+      props.active ? colors.primary.dark : colors.grey[100]};
   }
-  
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -487,16 +491,16 @@ export const DetailItem = styled.div`
   justify-content: space-between;
   padding: 8px 0;
   border-bottom: 1px solid ${colors.grey[200]};
-  
+
   &:last-of-type {
     border-bottom: none;
   }
-  
+
   span {
     color: ${colors.text.secondary};
     font-weight: 500;
   }
-  
+
   strong {
     color: ${colors.text.primary};
     font-weight: 600;
@@ -508,7 +512,7 @@ export const SearchBox = styled.div`
   position: relative;
   width: 100%;
   max-width: 300px;
-  
+
   svg {
     position: absolute;
     left: 12px;
@@ -516,7 +520,7 @@ export const SearchBox = styled.div`
     transform: translateY(-50%);
     color: ${colors.grey[400]};
   }
-  
+
   input {
     width: 100%;
     padding: 0.75rem 1rem 0.75rem 2.5rem;
@@ -526,7 +530,7 @@ export const SearchBox = styled.div`
     transition: all 0.2s;
     background-color: white;
     color: ${colors.text.primary};
-    
+
     &:focus {
       outline: none;
       border-color: ${colors.primary.main};
@@ -543,7 +547,7 @@ export const Toolbar = styled.div`
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
   gap: 1rem;
-  
+
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: stretch;
@@ -565,14 +569,16 @@ export const ViewTabs = styled.div`
 
 export const ViewTab = styled.button<{ active: boolean }>`
   padding: 0.75rem 1.25rem;
-  font-weight: ${(props) => (props.active ? '600' : '500')};
-  color: ${(props) => (props.active ? colors.primary.main : colors.text.secondary)};
-  border-bottom: 2px solid ${(props) => (props.active ? colors.primary.main : 'transparent')};
+  font-weight: ${(props) => (props.active ? "600" : "500")};
+  color: ${(props) =>
+    props.active ? colors.primary.main : colors.text.secondary};
+  border-bottom: 2px solid
+    ${(props) => (props.active ? colors.primary.main : "transparent")};
   background-color: white;
   border: none;
   cursor: pointer;
   transition: all 0.2s;
-  
+
   &:hover {
     color: ${colors.primary.main};
   }
@@ -592,7 +598,7 @@ export const DropdownButton = styled.button`
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  
+
   &:hover {
     background-color: ${colors.grey[50]};
   }
@@ -616,12 +622,14 @@ const TabContent = styled.div`
 
 const ModalTab = styled.div<{ active: boolean }>`
   padding: 0.75rem 1.25rem;
-  font-weight: ${(props) => (props.active ? '600' : '500')};
-  color: ${(props) => (props.active ? colors.primary.main : colors.text.secondary)};
-  border-bottom: 2px solid ${(props) => (props.active ? colors.primary.main : 'transparent')};
+  font-weight: ${(props) => (props.active ? "600" : "500")};
+  color: ${(props) =>
+    props.active ? colors.primary.main : colors.text.secondary};
+  border-bottom: 2px solid
+    ${(props) => (props.active ? colors.primary.main : "transparent")};
   cursor: pointer;
   transition: all 0.2s;
-  
+
   &:hover {
     color: ${colors.primary.main};
   }
@@ -635,7 +643,7 @@ const Button = styled.button`
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
@@ -657,15 +665,17 @@ const ViewToggle = styled.div`
 
 const ViewModeButton = styled.button<{ active: boolean }>`
   padding: 0.5rem 1rem;
-  background-color: ${props => props.active ? colors.primary.main : 'white'};
-  color: ${props => props.active ? 'white' : colors.text.secondary};
+  background-color: ${(props) =>
+    props.active ? colors.primary.main : "white"};
+  color: ${(props) => (props.active ? "white" : colors.text.secondary)};
   border: none;
   cursor: pointer;
   font-size: 0.9rem;
   transition: all 0.2s ease;
-  
+
   &:hover {
-    background-color: ${props => props.active ? colors.primary.dark : colors.grey[50]};
+    background-color: ${(props) =>
+      props.active ? colors.primary.dark : colors.grey[50]};
   }
 `;
 
@@ -682,7 +692,7 @@ export const SearchInput = styled.input`
   border: 1px solid ${colors.grey[200]};
   border-radius: 8px;
   font-size: 0.9rem;
-  
+
   &:focus {
     outline: none;
     border-color: ${colors.primary.main};
@@ -699,7 +709,7 @@ const CardDetail = styled.div`
   display: flex;
   align-items: start;
   margin-bottom: 0.75rem;
-  
+
   &:last-child {
     margin-bottom: 0;
   }
@@ -776,5 +786,5 @@ export const ClassroomStudentsStyles = {
   Pagination,
   PageButton,
   DropdownButton,
-  DetailItem
+  DetailItem,
 };

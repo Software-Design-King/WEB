@@ -33,9 +33,10 @@ interface StudentListResponse {
 
 // 학생 정보 인터페이스
 interface Student {
-  id: number; // 내부 고유 ID
+  studentId: number; // 내부 고유 ID
   name: string;
   status?: "active" | "inactive";
+  studentNum?: number; // 학생 번호
 }
 
 // 학생 상세 정보 인터페이스
@@ -120,16 +121,17 @@ const ClassroomStudents = () => {
   // 다음 우편번호 API 완료 이벤트 핸들러
   const handleComplete = (data: DaumPostcodeData) => {
     let fullAddress = data.address;
-    let extraAddress = '';
+    let extraAddress = "";
 
-    if (data.addressType === 'R') {
-      if (data.bname !== '') {
+    if (data.addressType === "R") {
+      if (data.bname !== "") {
         extraAddress += data.bname;
       }
-      if (data.buildingName !== '') {
-        extraAddress += extraAddress !== '' ? `, ${data.buildingName}` : data.buildingName;
+      if (data.buildingName !== "") {
+        extraAddress +=
+          extraAddress !== "" ? `, ${data.buildingName}` : data.buildingName;
       }
-      fullAddress += extraAddress !== '' ? ` (${extraAddress})` : '';
+      fullAddress += extraAddress !== "" ? ` (${extraAddress})` : "";
     }
 
     setNewStudent({
@@ -228,7 +230,7 @@ const ClassroomStudents = () => {
     if (batchStudents.length === 0) return;
 
     // BatchUpload에서 받은 데이터를 API 형식에 맞게 변환
-    const formattedStudents = batchStudents.map(student => ({
+    const formattedStudents = batchStudents.map((student) => ({
       userName: student.name || "",
       grade: grade || 1, // 교사의 담당 학년으로 고정
       classNum: 1, // 교사의 담당 반으로 고정
@@ -236,10 +238,13 @@ const ClassroomStudents = () => {
       userType: "STUDENT" as const,
       age: parseInt(student.age) || 16,
       address: student.address || "",
-      gender: student.gender === "여" || student.gender === "FEMALE" ? "FEMALE" : "MALE" as "MALE" | "FEMALE",
+      gender:
+        student.gender === "여" || student.gender === "FEMALE"
+          ? "FEMALE"
+          : ("MALE" as "MALE" | "FEMALE"),
       birthDate: student.birthDate || new Date().toISOString().split("T")[0],
       contact: student.contact || "",
-      parentContact: student.parentContact || ""
+      parentContact: student.parentContact || "",
     }));
 
     try {
@@ -272,7 +277,7 @@ const ClassroomStudents = () => {
     const filtered = studentList.filter(
       (student) =>
         student.name.toLowerCase().includes(query) ||
-        student.id.toString().includes(query)
+        student.studentId.toString().includes(query)
     );
 
     setFilteredStudents(filtered);
@@ -336,11 +341,11 @@ const ClassroomStudents = () => {
   const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
 
   // 학생 상세 정보 조회
-  const handleViewStudentDetail = async (id: number) => {
+  const handleViewStudentDetail = async (studentId: number) => {
     setIsDetailLoading(true);
-    console.log(`학생 ID ${id}의 상세 정보 조회 시작...`);
+    console.log(`학생 ID ${studentId}의 상세 정보 조회 시작...`);
     try {
-      const response = await getStudentDetail(id);
+      const response = await getStudentDetail(studentId);
       console.log("학생 상세 정보 응답:", response);
       console.log("학생 데이터:", response.data);
 
@@ -511,7 +516,7 @@ const ClassroomStudents = () => {
                   <thead>
                     <tr>
                       <ClassroomStudentsStyles.TableHeader width="100px">
-                        ID
+                        번호
                       </ClassroomStudentsStyles.TableHeader>
                       <ClassroomStudentsStyles.TableHeader>
                         이름
@@ -531,11 +536,13 @@ const ClassroomStudents = () => {
                     ) : (
                       currentStudents.map((student) => (
                         <ClassroomStudentsStyles.TableRow
-                          key={student.id}
-                          onClick={() => handleViewStudentDetail(student.id)}
+                          key={student.studentId}
+                          onClick={() =>
+                            handleViewStudentDetail(student.studentId)
+                          }
                         >
                           <ClassroomStudentsStyles.StudentIdCell>
-                            {student.id}
+                            {student.studentNum || "-"}
                           </ClassroomStudentsStyles.StudentIdCell>
                           <ClassroomStudentsStyles.StudentNameCell>
                             {student.name}
@@ -558,8 +565,8 @@ const ClassroomStudents = () => {
               <ClassroomStudentsStyles.CardGrid>
                 {currentStudents.map((student) => (
                   <ClassroomStudentsStyles.StudentCard
-                    key={student.id}
-                    onClick={() => handleViewStudentDetail(student.id)}
+                    key={student.studentId}
+                    onClick={() => handleViewStudentDetail(student.studentId)}
                   >
                     <ClassroomStudentsStyles.CardAvatar>
                       {student.name.charAt(0)}
@@ -570,7 +577,7 @@ const ClassroomStudents = () => {
                         {student.name}
                       </ClassroomStudentsStyles.CardName>
                       <ClassroomStudentsStyles.CardId>
-                        ID: <span>{student.id}</span>
+                        번호: <span>{student.studentNum || "-"}</span>
                       </ClassroomStudentsStyles.CardId>
                     </ClassroomStudentsStyles.CardHeader>
                   </ClassroomStudentsStyles.StudentCard>
@@ -711,7 +718,12 @@ const ClassroomStudents = () => {
                   <ClassroomStudentsStyles.ModalContent>
                     {currentStep === 1 ? (
                       <>
-                        <h3 style={{ marginBottom: "1.5rem", color: colors.primary.main }}>
+                        <h3
+                          style={{
+                            marginBottom: "1.5rem",
+                            color: colors.primary.main,
+                          }}
+                        >
                           학생 기본 정보
                         </h3>
                         <ClassroomStudentsStyles.FormGroup>
@@ -728,7 +740,9 @@ const ClassroomStudents = () => {
                         </ClassroomStudentsStyles.FormGroup>
 
                         <div style={{ display: "flex", gap: "1rem" }}>
-                          <ClassroomStudentsStyles.FormGroup style={{ flex: 1 }}>
+                          <ClassroomStudentsStyles.FormGroup
+                            style={{ flex: 1 }}
+                          >
                             <label htmlFor="grade">학년</label>
                             <input
                               type="number"
@@ -742,7 +756,9 @@ const ClassroomStudents = () => {
                             />
                           </ClassroomStudentsStyles.FormGroup>
 
-                          <ClassroomStudentsStyles.FormGroup style={{ flex: 1 }}>
+                          <ClassroomStudentsStyles.FormGroup
+                            style={{ flex: 1 }}
+                          >
                             <label htmlFor="classNum">반</label>
                             <input
                               type="number"
@@ -755,7 +771,9 @@ const ClassroomStudents = () => {
                             />
                           </ClassroomStudentsStyles.FormGroup>
 
-                          <ClassroomStudentsStyles.FormGroup style={{ flex: 1 }}>
+                          <ClassroomStudentsStyles.FormGroup
+                            style={{ flex: 1 }}
+                          >
                             <label htmlFor="number">번호</label>
                             <input
                               type="number"
@@ -783,18 +801,30 @@ const ClassroomStudents = () => {
 
                         <ClassroomStudentsStyles.FormGroup>
                           <label>성별</label>
-                          <div style={{ display: "flex", gap: "1rem", marginTop: "0.5rem" }}>
-                            <label 
-                              style={{ 
-                                display: "flex", 
-                                alignItems: "center", 
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "1rem",
+                              marginTop: "0.5rem",
+                            }}
+                          >
+                            <label
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
                                 cursor: "pointer",
-                                padding: "8px 16px", 
-                                borderRadius: "20px", 
+                                padding: "8px 16px",
+                                borderRadius: "20px",
                                 border: `1px solid ${colors.primary.main}`,
-                                backgroundColor: newStudent.gender === "MALE" ? colors.primary.main : "transparent",
-                                color: newStudent.gender === "MALE" ? "white" : colors.primary.main,
-                                transition: "all 0.3s ease"
+                                backgroundColor:
+                                  newStudent.gender === "MALE"
+                                    ? colors.primary.main
+                                    : "transparent",
+                                color:
+                                  newStudent.gender === "MALE"
+                                    ? "white"
+                                    : colors.primary.main,
+                                transition: "all 0.3s ease",
                               }}
                             >
                               <input
@@ -802,22 +832,37 @@ const ClassroomStudents = () => {
                                 name="gender"
                                 value="MALE"
                                 checked={newStudent.gender === "MALE"}
-                                onChange={e => setNewStudent({ ...newStudent, gender: e.target.value as "MALE" | "FEMALE" })}
-                                style={{ marginRight: "0.5rem", opacity: 0, position: "absolute" }}
+                                onChange={(e) =>
+                                  setNewStudent({
+                                    ...newStudent,
+                                    gender: e.target.value as "MALE" | "FEMALE",
+                                  })
+                                }
+                                style={{
+                                  marginRight: "0.5rem",
+                                  opacity: 0,
+                                  position: "absolute",
+                                }}
                               />
                               남자
                             </label>
-                            <label 
-                              style={{ 
-                                display: "flex", 
-                                alignItems: "center", 
+                            <label
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
                                 cursor: "pointer",
-                                padding: "8px 16px", 
-                                borderRadius: "20px", 
+                                padding: "8px 16px",
+                                borderRadius: "20px",
                                 border: `1px solid ${colors.primary.main}`,
-                                backgroundColor: newStudent.gender === "FEMALE" ? colors.primary.main : "transparent",
-                                color: newStudent.gender === "FEMALE" ? "white" : colors.primary.main,
-                                transition: "all 0.3s ease"
+                                backgroundColor:
+                                  newStudent.gender === "FEMALE"
+                                    ? colors.primary.main
+                                    : "transparent",
+                                color:
+                                  newStudent.gender === "FEMALE"
+                                    ? "white"
+                                    : colors.primary.main,
+                                transition: "all 0.3s ease",
                               }}
                             >
                               <input
@@ -825,8 +870,17 @@ const ClassroomStudents = () => {
                                 name="gender"
                                 value="FEMALE"
                                 checked={newStudent.gender === "FEMALE"}
-                                onChange={e => setNewStudent({ ...newStudent, gender: e.target.value as "MALE" | "FEMALE" })}
-                                style={{ marginRight: "0.5rem", opacity: 0, position: "absolute" }}
+                                onChange={(e) =>
+                                  setNewStudent({
+                                    ...newStudent,
+                                    gender: e.target.value as "MALE" | "FEMALE",
+                                  })
+                                }
+                                style={{
+                                  marginRight: "0.5rem",
+                                  opacity: 0,
+                                  position: "absolute",
+                                }}
                               />
                               여자
                             </label>
@@ -849,7 +903,12 @@ const ClassroomStudents = () => {
                       </>
                     ) : (
                       <>
-                        <h3 style={{ marginBottom: "1.5rem", color: colors.primary.main }}>
+                        <h3
+                          style={{
+                            marginBottom: "1.5rem",
+                            color: colors.primary.main,
+                          }}
+                        >
                           연락처 정보
                         </h3>
                         <ClassroomStudentsStyles.FormGroup>
@@ -865,17 +924,17 @@ const ClassroomStudents = () => {
                               style={{ flex: 1 }}
                               readOnly
                             />
-                            <button 
-                              type="button" 
+                            <button
+                              type="button"
                               onClick={() => setIsAddressModalOpen(true)}
-                              style={{ 
-                                marginLeft: "8px", 
-                                padding: "0 16px", 
+                              style={{
+                                marginLeft: "8px",
+                                padding: "0 16px",
                                 backgroundColor: colors.primary.main,
                                 color: "white",
                                 border: "none",
                                 borderRadius: "4px",
-                                cursor: "pointer"
+                                cursor: "pointer",
                               }}
                             >
                               주소 검색
@@ -884,37 +943,41 @@ const ClassroomStudents = () => {
                         </ClassroomStudentsStyles.FormGroup>
 
                         {isAddressModalOpen && (
-                          <div style={{ 
-                            position: "fixed", 
-                            top: 0, 
-                            left: 0, 
-                            width: "100%", 
-                            height: "100%", 
-                            backgroundColor: "rgba(0, 0, 0, 0.5)",
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            zIndex: 1100
-                          }}>
-                            <div style={{ 
-                              backgroundColor: "white", 
-                              padding: "20px", 
-                              borderRadius: "8px",
-                              width: "500px",
-                              maxWidth: "90%",
-                              position: "relative"
-                            }}>
-                              <button 
+                          <div
+                            style={{
+                              position: "fixed",
+                              top: 0,
+                              left: 0,
+                              width: "100%",
+                              height: "100%",
+                              backgroundColor: "rgba(0, 0, 0, 0.5)",
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                              zIndex: 1100,
+                            }}
+                          >
+                            <div
+                              style={{
+                                backgroundColor: "white",
+                                padding: "20px",
+                                borderRadius: "8px",
+                                width: "500px",
+                                maxWidth: "90%",
+                                position: "relative",
+                              }}
+                            >
+                              <button
                                 onClick={() => setIsAddressModalOpen(false)}
-                                style={{ 
-                                  position: "absolute", 
-                                  top: "10px", 
+                                style={{
+                                  position: "absolute",
+                                  top: "10px",
                                   right: "10px",
                                   background: "none",
                                   border: "none",
                                   fontSize: "18px",
                                   cursor: "pointer",
-                                  zIndex: 1
+                                  zIndex: 1,
                                 }}
                               >
                                 ✕

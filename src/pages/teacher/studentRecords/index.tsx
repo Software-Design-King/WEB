@@ -12,24 +12,32 @@ import {
   UpdateStudentInfoRequest,
 } from "../../../apis/student";
 import {
-  Tabs,
+  Button,
+  DatePicker,
   Form,
   Input,
+  Modal,
+  Popconfirm,
   Select,
-  DatePicker,
-  Button,
+  Tabs,
   message,
   Space,
   Tooltip,
 } from "antd";
-import { EditOutlined, SaveOutlined, CloseOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  EditOutlined,
+  PlusOutlined,
+  SaveOutlined
+} from "@ant-design/icons";
+import axios from "axios";
 import dayjs from "dayjs";
 
-const { TabPane } = Tabs;
+// antd 최신 버전에서는 items 속성을 사용하도록 권장합니다
 
 // 학생 정보 인터페이스
 interface Student {
-  id: number;
+  studentId: number;
   name: string;
 }
 
@@ -51,6 +59,24 @@ interface AttendanceRecord {
   date: string;
   type: "absent" | "late" | "earlyLeave" | "sickLeave";
   reason: string;
+}
+
+// 출결 등록 요청 인터페이스
+interface AttendanceRegisterRequest {
+  type: string;  // 출결 유형 (지각, 결석, 조퇴, 병결)
+  date: string;  // 날짜 (yyyy-mm-ddThh:mm:ss)
+  title: string;  // 사유명
+  reason: string; // 사유
+}
+
+// 출결 등록 응답 인터페이스
+interface AttendanceRegisterResponse {
+  code: number;
+  message: string;
+  data: {
+    id?: number;
+    success?: boolean;
+  };
 }
 
 // 행동 발달 기록 인터페이스
@@ -199,6 +225,11 @@ const StudentRecordsPage: React.FC = () => {
   // 탭 관련 상태
   const [activeTab, setActiveTab] = useState("1");
 
+  // 출결 등록 관련 상태
+  const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
+  const [attendanceForm] = Form.useForm();
+  const [isAttendanceSubmitting, setIsAttendanceSubmitting] = useState(false);
+
   // 학생 정보 수정 상태 관리
   const [isEditing, setIsEditing] = useState(false);
   const [form] = Form.useForm();
@@ -228,42 +259,180 @@ const StudentRecordsPage: React.FC = () => {
     }
   };
 
+  // 출결 현황 데이터 조회 API
+  const fetchAttendance = async (studentId: number) => {
+    try {
+      console.log(`학생 ID ${studentId}의 출결 현황 조회 시작...`);
+
+      const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const token = localStorage.getItem("token");
+
+      const response = await axios.get(`${BASE_URL}/attendance/${studentId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log("출결 현황 응답:", response.data);
+
+      if (response.data.code === 20000) {
+        return response.data.data;
+      } else {
+        console.error(
+          `출결 정보를 불러오는데 실패했습니다: ${response.data.message}`
+        );
+        return null;
+      }
+    } catch (err) {
+      console.error("출결 정보 조회 실패:", err);
+      return null;
+    }
+  };
+  
+  // 출결 등록 API
+  const registerAttendance = async (studentId: number, attendanceData: AttendanceRegisterRequest): Promise<boolean> => {
+    try {
+      console.log(`학생 ID ${studentId}의 출결 등록 시작...`);
+      console.log("등록할 출결 데이터:", attendanceData);
+
+      const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const token = localStorage.getItem("token");
+
+      const response = await axios.post<AttendanceRegisterResponse>(
+        `${BASE_URL}/student/attendance/${studentId}`,
+        attendanceData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("출결 등록 응답:", response.data);
+
+      if (response.data.code === 20000) {
+        message.success("출결 정보가 성공적으로 등록되었습니다.");
+        return true;
+      } else {
+        message.error(`출결 등록 실패: ${response.data.message}`);
+        return false;
+      }
+    } catch (err) {
+      console.error("출결 등록 실패:", err);
+      message.error("출결 등록중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      return false;
+    }
+  };
+  
+  // 출결 삭제 API
+  const deleteAttendance = async (studentId: number, date: string): Promise<boolean> => {
+    try {
+      console.log(`학생 ID ${studentId}의 출결 삭제 시작... 날짜: ${date}`);
+
+      // 날짜 형식 처리: YYYY-MM-DD 형식으로 변환
+      // 만약 date가 다른 형식이라면 적절히 처리
+      const formattedDate = date.split('T')[0]; // 시간 부분 제거
+      console.log(`포맷팅된 날짜: ${formattedDate}`);
+      
+      const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const token = localStorage.getItem("token");
+
+      // 날짜를 path variable로 전달
+      const response = await axios.delete(
+        `${BASE_URL}/student/attendance/${studentId}/${encodeURIComponent(formattedDate)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log("출결 삭제 응답:", response.data);
+
+      if (response.data.code === 20000) {
+        message.success("출결 정보가 성공적으로 삭제되었습니다.");
+        return true;
+      } else {
+        message.error(`출결 삭제 실패: ${response.data.message}`);
+        return false;
+      }
+    } catch (err) {
+      console.error("출결 삭제 실패:", err);
+      message.error("출결 삭제중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      return false;
+    }
+  };
+
   // 학생 상세 정보 조회
-  const fetchStudentDetail = async (id: number) => {
+  const fetchStudentDetail = async (studentId: number) => {
     setIsDetailLoading(true);
-    console.log(`학생 ID ${id}의 상세 정보 조회 시작...`);
+    console.log(`학생 ID ${studentId}의 상세 정보 조회 시작...`);
     try {
       // 1. 기본 정보 받아오기
-      const response = await getStudentDetail(id);
+      const response = await getStudentDetail(studentId);
       console.log("학생 상세 정보 응답:", response);
 
       if (response.code === 20000) {
         // API 응답에서는 이미 studentNum 필드를 사용하고 있음
         setStudentDetail(response.data);
 
-        // 2. 학생부 데이터 가져오기 (실제 구현에서는 API로 불러와야 함, 현재는 더미 데이터 사용)
-        if (studentRecordsData[id]) {
-          setStudentRecord(studentRecordsData[id]);
-        } else {
-          // 더미 데이터가 없는 경우 기본 정보로 분기본 분기만 생성
-          const newRecord: StudentRecord = {
-            basicInfo: response.data,
-            attendance: {
-              year: new Date().getFullYear().toString(),
-              semester: "1학기",
-              attendanceDays: 0,
-              absenceDays: 0,
-              lateDays: 0,
-              earlyLeaveDays: 0,
-              sickLeaveDays: 0,
-              details: [],
-            },
-            behavioral: [],
-            specialNotes: [],
-            activities: [],
+        // 2. 출결 정보 API 호출
+        const attendanceData = await fetchAttendance(studentId);
+
+        // 기본 학생부 레코드 생성
+        const newRecord: StudentRecord = {
+          basicInfo: response.data,
+          attendance: {
+            year: new Date().getFullYear().toString(),
+            semester: "1학기",
+            attendanceDays: 0,
+            absenceDays: 0,
+            lateDays: 0,
+            earlyLeaveDays: 0,
+            sickLeaveDays: 0,
+            details: [],
+          },
+          behavioral: studentRecordsData[1]?.behavioral || [], // 행동발달은 기존 더미 데이터 유지
+          specialNotes: studentRecordsData[1]?.specialNotes || [], // 특기사항은 기존 더미 데이터 유지
+          activities: studentRecordsData[1]?.activities || [], // 활동내역은 기존 더미 데이터 유지
+        };
+
+        // 출결 정보가 있으면 매핑
+        if (attendanceData) {
+          newRecord.attendance = {
+            year: new Date().getFullYear().toString(),
+            semester: "1학기",
+            attendanceDays:
+              attendanceData.totalDays -
+              (attendanceData.absentCount +
+                attendanceData.lateCount +
+                attendanceData.leaveCount +
+                attendanceData.sickCount),
+            absenceDays: attendanceData.absentCount,
+            lateDays: attendanceData.lateCount,
+            earlyLeaveDays: attendanceData.leaveCount,
+            sickLeaveDays: attendanceData.sickCount,
+            details: attendanceData.details.map((detail) => {
+              // API 응답의 type을 UI에 맞게 변환
+              let type: "absent" | "late" | "earlyLeave" | "sickLeave" =
+                "absent";
+
+              if (detail.type === "결석") type = "absent";
+              else if (detail.type === "지각") type = "late";
+              else if (detail.type === "조퇴") type = "earlyLeave";
+              else if (detail.type === "병결") type = "sickLeave";
+
+              return {
+                date: detail.date,
+                type,
+                reason: detail.reason,
+              };
+            }),
           };
-          setStudentRecord(newRecord);
         }
+
+        setStudentRecord(newRecord);
       } else {
         alert(`학생 정보를 불러오는데 실패했습니다: ${response.message}`);
         setStudentDetail(null);
@@ -284,6 +453,80 @@ const StudentRecordsPage: React.FC = () => {
     setActiveTab(activeKey);
   };
 
+  // 출결 등록 모달 열기
+  const showAttendanceModal = () => {
+    attendanceForm.resetFields();
+    // 현재 날짜 기본값 설정 - DatePicker에는 dayjs 객체를 직접 전달
+    attendanceForm.setFieldsValue({
+      date: undefined, // 날짜는 DatePicker에서 직접 선택하도록 초기값 미설정
+      defaultDate: dayjs() // DatePicker에 전달할 기본 날짜 (dayjs 객체)
+    });
+    setIsAttendanceModalOpen(true);
+  };
+
+  // 출결 등록 모달 닫기
+  const handleAttendanceCancel = () => {
+    setIsAttendanceModalOpen(false);
+  };
+
+  // 출결 등록 제출 처리
+  const handleAttendanceSubmit = async () => {
+    try {
+      setIsAttendanceSubmitting(true);
+      const values = await attendanceForm.validateFields();
+
+      if (!selectedStudent) {
+        message.error("학생을 선택해주세요.");
+        return;
+      }
+
+      // API 요청 데이터 형식에 맞게 변환
+      const date = values.date || dayjs(values.defaultDate).format("YYYY-MM-DDTHH:mm:ss");
+      
+      const attendanceData: AttendanceRegisterRequest = {
+        type: values.type,
+        date: date,
+        title: values.title,
+        reason: values.reason,
+      };
+
+      // 출결 등록 API 호출
+      const success = await registerAttendance(selectedStudent.studentId, attendanceData);
+
+      if (success) {
+        setIsAttendanceModalOpen(false);
+        // 출결 데이터 새로 가져오기
+        if (selectedStudent) {
+          fetchStudentDetail(selectedStudent.studentId);
+        }
+      }
+    } catch (error) {
+      console.error("출결 등록 양식 유효성 검사 오류:", error);
+    } finally {
+      setIsAttendanceSubmitting(false);
+    }
+  };
+  
+  // 출결 삭제 처리
+  const handleAttendanceDelete = async (date: string) => {
+    if (!selectedStudent) {
+      message.error("학생을 선택해주세요.");
+      return;
+    }
+    
+    try {
+      // 출결 삭제 API 호출
+      const success = await deleteAttendance(selectedStudent.studentId, date);
+      
+      if (success) {
+        // 출결 데이터 새로 가져오기
+        fetchStudentDetail(selectedStudent.studentId);
+      }
+    } catch (error) {
+      console.error("출결 삭제 처리 오류:", error);
+    }
+  };
+
   // 컴포넌트 마운트 시 학생 목록 가져오기
   useEffect(() => {
     fetchStudents();
@@ -300,7 +543,7 @@ const StudentRecordsPage: React.FC = () => {
     const filtered = students.filter(
       (student) =>
         student.name.toLowerCase().includes(query) ||
-        student.id.toString().includes(query)
+        student.studentId.toString().includes(query)
     );
 
     setFilteredStudents(filtered);
@@ -309,7 +552,7 @@ const StudentRecordsPage: React.FC = () => {
   // 학생 선택 시 상세 정보 불러오기
   const handleStudentSelect = (student: Student) => {
     setSelectedStudent(student);
-    fetchStudentDetail(student.id);
+    fetchStudentDetail(student.studentId);
     // 학생 변경 시 항상 기본 정보 탭으로 초기화
     setActiveTab("1");
   };
@@ -336,6 +579,17 @@ const StudentRecordsPage: React.FC = () => {
 
     return (
       <>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
+          <h3>출결 현황</h3>
+          <Button
+            type="primary"
+            onClick={showAttendanceModal}
+            icon={<PlusOutlined />}
+          >
+            출결 등록
+          </Button>
+        </div>
+
         <AttendanceSummary>
           <AttendanceCard>
             <AttendanceValue>{attendance.attendanceDays}</AttendanceValue>
@@ -362,7 +616,25 @@ const StudentRecordsPage: React.FC = () => {
         <RecordsList>
           {attendance.details.map((record, index) => (
             <RecordItem key={index}>
-              <div style={{ marginBottom: "0.5rem" }}>{record.date}</div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                <div>{record.date}</div>
+                <div>
+                  <Popconfirm
+                    title="출결 삭제"
+                    description="정말 이 출결 기록을 삭제하시겠습니까?"
+                    onConfirm={() => handleAttendanceDelete(record.date)}
+                    okText="예"
+                    cancelText="아니오"
+                  >
+                    <Button
+                      type="text"
+                      danger
+                      icon={<DeleteOutlined />}
+                      size="small"
+                    />
+                  </Popconfirm>
+                </div>
+              </div>
               <div style={{ marginBottom: "0.5rem" }}>
                 <StatusBadge
                   color={
@@ -370,6 +642,8 @@ const StudentRecordsPage: React.FC = () => {
                       ? "error"
                       : record.type === "late"
                       ? "warning"
+                      : record.type === "sickLeave"
+                      ? "default"
                       : "processing"
                   }
                 >
@@ -379,6 +653,8 @@ const StudentRecordsPage: React.FC = () => {
                     ? "지각"
                     : record.type === "earlyLeave"
                     ? "조퇴"
+                    : record.type === "sickLeave"
+                    ? "병결"
                     : "기타"}
                 </StatusBadge>
                 <span style={{ marginLeft: "0.5rem" }}>{record.reason}</span>
@@ -386,6 +662,91 @@ const StudentRecordsPage: React.FC = () => {
             </RecordItem>
           ))}
         </RecordsList>
+
+        {/* 출결 등록 모달 */}
+        <Modal
+          title="출결 등록"
+          open={isAttendanceModalOpen}
+          onCancel={handleAttendanceCancel}
+          footer={[
+            <Button key="cancel" onClick={handleAttendanceCancel}>
+              취소
+            </Button>,
+            <Button
+              key="submit"
+              type="primary"
+              loading={isAttendanceSubmitting}
+              onClick={handleAttendanceSubmit}
+            >
+              등록
+            </Button>,
+          ]}
+        >
+          <Form
+            form={attendanceForm}
+            layout="vertical"
+            style={{ marginTop: "1rem" }}
+          >
+            <Form.Item
+              name="type"
+              label="출결 유형"
+              rules={[{ required: true, message: "출결 유형을 선택해주세요" }]}
+            >
+              <Select placeholder="출결 유형 선택">
+                <Select.Option value="지각">지각</Select.Option>
+                <Select.Option value="결석">결석</Select.Option>
+                <Select.Option value="조퇴">조퇴</Select.Option>
+                <Select.Option value="병결">병결</Select.Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              name="date"
+              noStyle
+            >
+              <Input type="hidden" />
+            </Form.Item>
+            
+            <Form.Item
+              name="defaultDate"
+              label="날짜"
+              rules={[{ required: true, message: "날짜를 입력해주세요" }]}
+            >
+              <DatePicker 
+                style={{ width: "100%" }} 
+                format="YYYY-MM-DD"
+                defaultValue={dayjs()}
+                onChange={(value) => {
+                  if (value) {
+                    // dayjs 객체를 사용하여 안전하게 변환
+                    attendanceForm.setFieldsValue({ 
+                      date: dayjs(value).format("YYYY-MM-DDTHH:mm:ss") 
+                    });
+                  }
+                }}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="title"
+              label="사유명"
+              rules={[{ required: true, message: "사유명을 입력해주세요" }]}
+            >
+              <Input placeholder="예: 병원 방문, 가족 사정" />
+            </Form.Item>
+
+            <Form.Item
+              name="reason"
+              label="상세 사유"
+              rules={[{ required: true, message: "상세 사유를 입력해주세요" }]}
+            >
+              <Input.TextArea
+                placeholder="상세 사유를 입력해주세요"
+                rows={4}
+              />
+            </Form.Item>
+          </Form>
+        </Modal>
       </>
     );
   };
@@ -503,20 +864,20 @@ const StudentRecordsPage: React.FC = () => {
         // API는 number 필드를 사용하므로 변환
         number: values.studentNum,
       };
-      
+
       // studentNum 필드는 API에 보내지 않음
       delete formattedValues.studentNum;
 
       // API 호출
       const response = await updateStudentInfo(
-        selectedStudent.id,
+        selectedStudent.studentId,
         formattedValues
       );
 
       if (response.code === 20000) {
         message.success("학생 정보가 성공적으로 수정되었습니다.");
         // 학생 정보 다시 불러오기
-        fetchStudentDetail(selectedStudent.id);
+        fetchStudentDetail(selectedStudent.studentId);
         setIsEditing(false);
       } else {
         message.error(`정보 수정 실패: ${response.message}`);
@@ -548,7 +909,6 @@ const StudentRecordsPage: React.FC = () => {
                 저장
               </Button>
               <Button
-                icon={<CloseOutlined />}
                 onClick={cancelEditing}
                 disabled={isSubmitting}
               >
@@ -866,9 +1226,11 @@ const StudentRecordsPage: React.FC = () => {
               ) : (
                 filteredStudents.map((student) => (
                   <StudentItem
-                    key={student.id}
+                    key={student.studentId}
                     onClick={() => handleStudentSelect(student)}
-                    isSelected={selectedStudent?.id === student.id}
+                    $isSelected={
+                      selectedStudent?.studentId === student.studentId
+                    }
                   >
                     {student.name}
                   </StudentItem>
@@ -893,23 +1255,38 @@ const StudentRecordsPage: React.FC = () => {
                   <h2>{studentDetail.name} 학생 학생부</h2>
                 </DetailHeader>
 
-                <Tabs activeKey={activeTab} onChange={handleTabChange}>
-                  <TabPane tab="기본 정보" key="1">
-                    {renderBasicInfo()}
-                  </TabPane>
-                  <TabPane tab="출결 현황" key="2">
-                    {renderAttendance()}
-                  </TabPane>
-                  <TabPane tab="행동 발달" key="3">
-                    {renderBehavioral()}
-                  </TabPane>
-                  <TabPane tab="특기 사항" key="4">
-                    {renderSpecialNotes()}
-                  </TabPane>
-                  <TabPane tab="활동 내역" key="5">
-                    {renderActivities()}
-                  </TabPane>
-                </Tabs>
+                <Tabs
+                  activeKey={activeTab}
+                  onChange={handleTabChange}
+                  style={{ width: "100%" }}
+                  items={[
+                    {
+                      key: "1",
+                      label: "기본 정보",
+                      children: renderBasicInfo()
+                    },
+                    {
+                      key: "2",
+                      label: "출결 현황",
+                      children: renderAttendance()
+                    },
+                    {
+                      key: "3",
+                      label: "행동 발달",
+                      children: renderBehavioral()
+                    },
+                    {
+                      key: "4",
+                      label: "특기 사항",
+                      children: renderSpecialNotes()
+                    },
+                    {
+                      key: "5",
+                      label: "활동 내역",
+                      children: renderActivities()
+                    }
+                  ]}
+                />
               </>
             )}
           </StudentDetailContainer>
@@ -990,21 +1367,21 @@ const StudentList = styled.div`
   padding: 8px 0;
 `;
 
-const StudentItem = styled.div<{ isSelected: boolean }>`
+const StudentItem = styled.div<{ $isSelected: boolean }>`
   padding: 12px 16px;
   font-size: 15px;
   cursor: pointer;
   border-left: 3px solid
-    ${(props) => (props.isSelected ? colors.primary.main : "transparent")};
+    ${(props) => (props.$isSelected ? colors.primary.main : "transparent")};
   background-color: ${(props) =>
-    props.isSelected ? colors.primary.light : "transparent"};
+    props.$isSelected ? colors.primary.light : "transparent"};
   color: ${(props) =>
-    props.isSelected ? colors.primary.dark : colors.text.primary};
+    props.$isSelected ? colors.primary.dark : colors.text.primary};
   transition: all 0.2s;
 
   &:hover {
     background-color: ${(props) =>
-      props.isSelected ? colors.primary.light : colors.grey[100]};
+      props.$isSelected ? colors.primary.light : colors.grey[100]};
   }
 `;
 
