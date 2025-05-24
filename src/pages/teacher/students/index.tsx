@@ -3,11 +3,24 @@ import DashboardLayout from "../../../components/layout/DashboardLayout";
 import TeacherSidebar from "../../../components/layout/TeacherSidebar";
 import { ContentContainer } from "../../../components/dashboard/DashboardComponents.styles";
 import { useUserStore } from "../../../stores/userStore";
+import * as ClassroomStudentsStyles from "./ClassroomStudents.styles";
 import { colors } from "../../../components/common/Common.styles";
-import { ClassroomStudentsStyles } from "./ClassroomStudents.styles";
 import BatchUpload from "./BatchUpload";
 import { AnimatePresence, motion } from "framer-motion";
 import axios from "axios";
+import { getStudentDetail, enrollStudents } from "../../../apis/student";
+import DaumPostcode from "react-daum-postcode";
+
+// 다음 우편번호 API 응답 인터페이스
+interface DaumPostcodeData {
+  address: string;
+  addressType: string;
+  bname: string;
+  buildingName: string;
+  zonecode: string;
+  roadAddress: string;
+  jibunAddress: string;
+}
 // API 응답 인터페이스
 interface StudentListResponse {
   code: number;
@@ -15,18 +28,27 @@ interface StudentListResponse {
   data: {
     grade: number;
     students: Student[];
-  }
+  };
 }
 
 // 학생 정보 인터페이스
 interface Student {
   id: number; // 내부 고유 ID
   name: string;
-  // 추가 정보를 위한 필드
-  studentNumber?: string; 
-  contact?: string;
-  note?: string;
   status?: "active" | "inactive";
+}
+
+// 학생 상세 정보 인터페이스
+interface StudentDetail {
+  name: string;
+  birthDate: string;
+  gender: string;
+  address: string;
+  contact: string;
+  entranceDate: string;
+  grade: number;
+  classNum: number;
+  studentNum: number;
 }
 
 // 제거됨: 더 이상 사용하지 않는 임시 학생 데이터
@@ -41,6 +63,8 @@ const ClassroomStudents = () => {
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBatchMode, setIsBatchMode] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "card">("list");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -48,34 +72,103 @@ const ClassroomStudents = () => {
   const [grade, setGrade] = useState<number | null>(null);
   const [isApiLoading, setIsApiLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [studentDetail, setStudentDetail] = useState<StudentDetail | null>(
+    null
+  );
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
 
-  const [newStudent, setNewStudent] = useState<Omit<Student, "id">>({
-    studentNumber: "",
-    name: "",
+  const [newStudent, setNewStudent] = useState({
+    userName: "",
+    grade: grade || 1,
+    classNum: 1,
+    number: 1,
+    userType: "STUDENT" as const,
+    age: 16,
+    address: "",
+    gender: "MALE" as "MALE" | "FEMALE",
+    birthDate: "",
     contact: "",
-    note: "",
-    status: "active",
+    parentContact: "",
   });
 
   // 학급 정보 (학년 포함)
-  const classInfo = grade ? `${grade}학년 ${userInfo?.roleInfo || ""}` : userInfo?.roleInfo || "학급 정보 없음";
+  const classInfo = grade
+    ? `${grade}학년 ${userInfo?.roleInfo || ""}`
+    : userInfo?.roleInfo || "학급 정보 없음";
 
   // 모달 닫기
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setIsBatchMode(false);
+    setCurrentStep(1);
     setNewStudent({
-      studentNumber: "",
-      name: "",
+      userName: "",
+      grade: grade || 1,
+      classNum: 1,
+      number: 1,
+      userType: "STUDENT" as const,
+      age: 16,
+      address: "",
+      gender: "MALE" as "MALE" | "FEMALE",
+      birthDate: "",
       contact: "",
-      note: "",
-      status: "active",
+      parentContact: "",
     });
   };
 
-  // 입력 필드 변경 처리
+  // 다음 우편번호 API 완료 이벤트 핸들러
+  const handleComplete = (data: DaumPostcodeData) => {
+    let fullAddress = data.address;
+    let extraAddress = '';
+
+    if (data.addressType === 'R') {
+      if (data.bname !== '') {
+        extraAddress += data.bname;
+      }
+      if (data.buildingName !== '') {
+        extraAddress += extraAddress !== '' ? `, ${data.buildingName}` : data.buildingName;
+      }
+      fullAddress += extraAddress !== '' ? ` (${extraAddress})` : '';
+    }
+
+    setNewStudent({
+      ...newStudent,
+      address: fullAddress,
+    });
+    setIsAddressModalOpen(false);
+  };
+
+  // 다음 스텝으로 이동
+  const handleNextStep = () => {
+    // 기본 필수 필드 검증
+    if (!newStudent.userName) {
+      alert("이름을 입력해주세요.");
+      return;
+    }
+    if (!newStudent.birthDate) {
+      alert("생년월일을 입력해주세요.");
+      return;
+    }
+    setCurrentStep(2);
+  };
+
+  // 이전 스텝으로 이동
+  const handlePrevStep = () => {
+    setCurrentStep(1);
+  };
+
+  // 상세 정보 모달 닫기
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setStudentDetail(null);
+  };
+
+  // 입력 값 변경 핸들러
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setNewStudent({
@@ -85,45 +178,87 @@ const ClassroomStudents = () => {
   };
 
   // 학생 추가
-  const handleAddStudent = () => {
-    if (!newStudent.name || !newStudent.studentNumber) {
-      alert("번호와 이름은 필수 입력 항목입니다.");
+  const handleAddStudent = async () => {
+    if (!newStudent.userName) {
+      alert("이름은 필수 입력 항목입니다.");
       return;
     }
 
-    const newId =
-      students.length > 0 ? Math.max(...students.map((s) => s.id)) + 1 : 1;
+    if (!newStudent.birthDate) {
+      alert("생년월일은 필수 입력 항목입니다.");
+      return;
+    }
 
-    const updatedStudents = [
-      ...students,
-      {
-        id: newId,
-        ...newStudent,
-      },
-    ];
+    try {
+      setIsApiLoading(true);
+      const response = await enrollStudents([newStudent]);
 
-    setStudents(updatedStudents);
-    updateFilteredStudents(updatedStudents);
-    handleCloseModal();
+      if (response.code === 20000) {
+        alert(`학생이 성공적으로 등록되었습니다.`);
+        fetchStudents(); // 학생 목록 다시 불러오기
+        handleCloseModal();
+      } else {
+        alert(`학생 등록 실패: ${response.message}`);
+      }
+    } catch (err) {
+      console.error("학생 등록 오류:", err);
+      alert("학생 등록에 실패했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setIsApiLoading(false);
+    }
   };
 
+  // StudentData 인터페이스 (BatchUpload 컴포넌트와 호환)
+  interface StudentData {
+    studentNumber: string; // 번호
+    name: string; // 이름
+    grade?: string; // 학년 (교사 정보에서 자동 설정)
+    classNum?: string; // 반 (교사 정보에서 자동 설정)
+    gender: string; // 성별
+    age: string; // 나이
+    birthDate: string; // 생년월일
+    address: string; // 주소
+    contact: string; // 연락처
+    parentContact: string; // 보호자 연락처
+    note: string; // 특이사항
+  }
+
   // 일괄 학생 추가
-  const handleBatchUpload = (batchStudents: Omit<Student, "id">[]) => {
+  const handleBatchUpload = async (batchStudents: StudentData[]) => {
     if (batchStudents.length === 0) return;
 
-    let lastId =
-      students.length > 0 ? Math.max(...students.map((s) => s.id)) : 0;
-
-    const newStudents = batchStudents.map((student) => ({
-      ...student,
-      id: ++lastId,
-      status: "active" as const,
+    // BatchUpload에서 받은 데이터를 API 형식에 맞게 변환
+    const formattedStudents = batchStudents.map(student => ({
+      userName: student.name || "",
+      grade: grade || 1, // 교사의 담당 학년으로 고정
+      classNum: 1, // 교사의 담당 반으로 고정
+      number: parseInt(student.studentNumber) || 1,
+      userType: "STUDENT" as const,
+      age: parseInt(student.age) || 16,
+      address: student.address || "",
+      gender: student.gender === "여" || student.gender === "FEMALE" ? "FEMALE" : "MALE" as "MALE" | "FEMALE",
+      birthDate: student.birthDate || new Date().toISOString().split("T")[0],
+      contact: student.contact || "",
+      parentContact: student.parentContact || ""
     }));
 
-    const updatedStudents = [...students, ...newStudents];
-    setStudents(updatedStudents);
-    updateFilteredStudents(updatedStudents);
-    handleCloseModal();
+    try {
+      setIsApiLoading(true);
+      const response = await enrollStudents(formattedStudents);
+
+      if (response.code === 20000) {
+        alert(`학생이 성공적으로 등록되었습니다.`);
+        fetchStudents(); // 학생 목록 다시 불러오기
+        handleCloseModal();
+      } else {
+        alert(`학생 일괄 등록 실패: ${response.message}`);
+      }
+    } catch (err) {
+      console.error("학생 일괄 등록 오류:", err);
+      alert("학생 일괄 등록에 실패했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setIsApiLoading(false);
+    }
   };
 
   // 필터링 및 검색 기능
@@ -137,9 +272,7 @@ const ClassroomStudents = () => {
     const filtered = studentList.filter(
       (student) =>
         student.name.toLowerCase().includes(query) ||
-        student.studentNumber.toLowerCase().includes(query) ||
-        student.contact.toLowerCase().includes(query) ||
-        student.note.toLowerCase().includes(query)
+        student.id.toString().includes(query)
     );
 
     setFilteredStudents(filtered);
@@ -150,15 +283,20 @@ const ClassroomStudents = () => {
     setIsApiLoading(true);
     setError(null);
     try {
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "https://www.software-design-king.p-e.kr";
-      const response = await axios.get<StudentListResponse>(`${apiBaseUrl}/student/list`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+      const apiBaseUrl =
+        import.meta.env.VITE_API_BASE_URL ||
+        "https://www.software-design-king.p-e.kr";
+      const response = await axios.get<StudentListResponse>(
+        `${apiBaseUrl}/student/list`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
         }
-      });
-      
+      );
+
       if (response.data.code === 20000) {
-        console.log('학생 목록 조회 성공:', response.data);
+        console.log("학생 목록 조회 성공:", response.data);
         setGrade(response.data.data.grade);
         setStudents(response.data.data.students);
         setFilteredStudents(response.data.data.students);
@@ -166,8 +304,10 @@ const ClassroomStudents = () => {
         setError(`데이터를 불러오는데 실패했습니다: ${response.data.message}`);
       }
     } catch (err) {
-      console.error('학생 목록을 불러오는데 실패했습니다:', err);
-      setError('학생 목록을 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.');
+      console.error("학생 목록을 불러오는데 실패했습니다:", err);
+      setError(
+        "학생 목록을 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요."
+      );
     } finally {
       setIsApiLoading(false);
     }
@@ -195,12 +335,26 @@ const ClassroomStudents = () => {
   );
   const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
 
-  // 학생 삭제
-  const handleDeleteStudent = (id: number) => {
-    if (window.confirm("정말 이 학생을 목록에서 삭제하시겠습니까?")) {
-      const updatedStudents = students.filter((student) => student.id !== id);
-      setStudents(updatedStudents);
-      updateFilteredStudents(updatedStudents);
+  // 학생 상세 정보 조회
+  const handleViewStudentDetail = async (id: number) => {
+    setIsDetailLoading(true);
+    console.log(`학생 ID ${id}의 상세 정보 조회 시작...`);
+    try {
+      const response = await getStudentDetail(id);
+      console.log("학생 상세 정보 응답:", response);
+      console.log("학생 데이터:", response.data);
+
+      if (response.code === 20000) {
+        setStudentDetail(response.data);
+        setIsDetailModalOpen(true);
+      } else {
+        alert(`학생 정보를 불러오는데 실패했습니다: ${response.message}`);
+      }
+    } catch (err) {
+      console.error("학생 상세 정보 조회 실패:", err);
+      alert("학생 정보를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      setIsDetailLoading(false);
     }
   };
 
@@ -356,54 +510,39 @@ const ClassroomStudents = () => {
                 <ClassroomStudentsStyles.Table>
                   <thead>
                     <tr>
-                      <ClassroomStudentsStyles.TableHeader width="5%">
-                        No
+                      <ClassroomStudentsStyles.TableHeader width="100px">
+                        ID
                       </ClassroomStudentsStyles.TableHeader>
-                      <ClassroomStudentsStyles.TableHeader width="10%">
-                        번호
-                      </ClassroomStudentsStyles.TableHeader>
-                      <ClassroomStudentsStyles.TableHeader width="20%">
+                      <ClassroomStudentsStyles.TableHeader>
                         이름
-                      </ClassroomStudentsStyles.TableHeader>
-                      <ClassroomStudentsStyles.TableHeader width="20%">
-                        연락처
-                      </ClassroomStudentsStyles.TableHeader>
-                      <ClassroomStudentsStyles.TableHeader width="30%">
-                        특이사항
-                      </ClassroomStudentsStyles.TableHeader>
-                      <ClassroomStudentsStyles.TableHeader width="10%">
-                        관리
                       </ClassroomStudentsStyles.TableHeader>
                     </tr>
                   </thead>
                   <tbody>
-                    {currentStudents.map((student, index) => (
-                      <tr key={student.id}>
-                        <ClassroomStudentsStyles.TableCell>
-                          {indexOfFirstStudent + index + 1}
-                        </ClassroomStudentsStyles.TableCell>
-                        <ClassroomStudentsStyles.TableCell>
-                          {student.studentNumber || "-"}
-                        </ClassroomStudentsStyles.TableCell>
-                        <ClassroomStudentsStyles.TableCell>
-                          {student.name}
-                        </ClassroomStudentsStyles.TableCell>
-                        <ClassroomStudentsStyles.TableCell>
-                          {student.contact || "-"}
-                        </ClassroomStudentsStyles.TableCell>
-                        <ClassroomStudentsStyles.TableCell>
-                          {student.note || "-"}
-                        </ClassroomStudentsStyles.TableCell>
-                        <ClassroomStudentsStyles.TableCell>
-                          <ClassroomStudentsStyles.ActionButton
-                            onClick={() => handleDeleteStudent(student.id)}
-                            color="#f44336"
-                          >
-                            삭제
-                          </ClassroomStudentsStyles.ActionButton>
+                    {currentStudents.length === 0 ? (
+                      <tr>
+                        <ClassroomStudentsStyles.TableCell
+                          colSpan={2}
+                          style={{ textAlign: "center" }}
+                        >
+                          학생 정보가 없습니다.
                         </ClassroomStudentsStyles.TableCell>
                       </tr>
-                    ))}
+                    ) : (
+                      currentStudents.map((student) => (
+                        <ClassroomStudentsStyles.TableRow
+                          key={student.id}
+                          onClick={() => handleViewStudentDetail(student.id)}
+                        >
+                          <ClassroomStudentsStyles.StudentIdCell>
+                            {student.id}
+                          </ClassroomStudentsStyles.StudentIdCell>
+                          <ClassroomStudentsStyles.StudentNameCell>
+                            {student.name}
+                          </ClassroomStudentsStyles.StudentNameCell>
+                        </ClassroomStudentsStyles.TableRow>
+                      ))
+                    )}
                   </tbody>
                 </ClassroomStudentsStyles.Table>
               </ClassroomStudentsStyles.TableContainer>
@@ -418,66 +557,22 @@ const ClassroomStudents = () => {
             >
               <ClassroomStudentsStyles.CardGrid>
                 {currentStudents.map((student) => (
-                  <ClassroomStudentsStyles.StudentCard key={student.id}>
+                  <ClassroomStudentsStyles.StudentCard
+                    key={student.id}
+                    onClick={() => handleViewStudentDetail(student.id)}
+                  >
+                    <ClassroomStudentsStyles.CardAvatar>
+                      {student.name.charAt(0)}
+                    </ClassroomStudentsStyles.CardAvatar>
+
                     <ClassroomStudentsStyles.CardHeader>
                       <ClassroomStudentsStyles.CardName>
                         {student.name}
                       </ClassroomStudentsStyles.CardName>
                       <ClassroomStudentsStyles.CardId>
-                        번호: {student.studentNumber || "-"}
+                        ID: <span>{student.id}</span>
                       </ClassroomStudentsStyles.CardId>
                     </ClassroomStudentsStyles.CardHeader>
-
-                    <ClassroomStudentsStyles.CardContent>
-                      <ClassroomStudentsStyles.CardDetail>
-                        <ClassroomStudentsStyles.CardIcon>
-                          <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        </ClassroomStudentsStyles.CardIcon>
-                        <ClassroomStudentsStyles.CardText>
-                          {student.contact || "-"}
-                        </ClassroomStudentsStyles.CardText>
-                      </ClassroomStudentsStyles.CardDetail>
-
-                      <ClassroomStudentsStyles.CardDetail>
-                        <ClassroomStudentsStyles.CardIcon>
-                          <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        </ClassroomStudentsStyles.CardIcon>
-                        <ClassroomStudentsStyles.CardText>
-                          {student.note || "-"}
-                        </ClassroomStudentsStyles.CardText>
-                      </ClassroomStudentsStyles.CardDetail>
-                    </ClassroomStudentsStyles.CardContent>
-
-                    <ClassroomStudentsStyles.CardFooter>
-                      <ClassroomStudentsStyles.ActionButton
-                        onClick={() => handleDeleteStudent(student.id)}
-                        color="#f44336"
-                      >
-                        삭제
-                      </ClassroomStudentsStyles.ActionButton>
-                    </ClassroomStudentsStyles.CardFooter>
                   </ClassroomStudentsStyles.StudentCard>
                 ))}
               </ClassroomStudentsStyles.CardGrid>
@@ -499,7 +594,7 @@ const ClassroomStudents = () => {
             <ClassroomStudentsStyles.ActionButton
               onClick={fetchStudents}
               color="#2196f3"
-              style={{ marginTop: '1rem' }}
+              style={{ marginTop: "1rem" }}
             >
               다시 시도
             </ClassroomStudentsStyles.ActionButton>
@@ -614,74 +709,403 @@ const ClassroomStudents = () => {
                 /* 개별 추가 모드 */
                 <>
                   <ClassroomStudentsStyles.ModalContent>
-                    <ClassroomStudentsStyles.FormGroup>
-                      <label htmlFor="studentNumber">번호 *</label>
-                      <input
-                        type="text"
-                        id="studentNumber"
-                        name="studentNumber"
-                        value={newStudent.studentNumber}
-                        onChange={handleInputChange}
-                        placeholder="번호를 입력하세요"
-                        required
-                      />
-                    </ClassroomStudentsStyles.FormGroup>
+                    {currentStep === 1 ? (
+                      <>
+                        <h3 style={{ marginBottom: "1.5rem", color: colors.primary.main }}>
+                          학생 기본 정보
+                        </h3>
+                        <ClassroomStudentsStyles.FormGroup>
+                          <label htmlFor="userName">이름 *</label>
+                          <input
+                            type="text"
+                            id="userName"
+                            name="userName"
+                            value={newStudent.userName}
+                            onChange={handleInputChange}
+                            placeholder="이름을 입력하세요"
+                            required
+                          />
+                        </ClassroomStudentsStyles.FormGroup>
 
-                    <ClassroomStudentsStyles.FormGroup>
-                      <label htmlFor="name">이름 *</label>
-                      <input
-                        type="text"
-                        id="name"
-                        name="name"
-                        value={newStudent.name}
-                        onChange={handleInputChange}
-                        placeholder="이름을 입력하세요"
-                        required
-                      />
-                    </ClassroomStudentsStyles.FormGroup>
+                        <div style={{ display: "flex", gap: "1rem" }}>
+                          <ClassroomStudentsStyles.FormGroup style={{ flex: 1 }}>
+                            <label htmlFor="grade">학년</label>
+                            <input
+                              type="number"
+                              id="grade"
+                              name="grade"
+                              min="1"
+                              max="6"
+                              value={grade || 1}
+                              readOnly
+                              style={{ backgroundColor: "#f0f0f0" }}
+                            />
+                          </ClassroomStudentsStyles.FormGroup>
 
-                    <ClassroomStudentsStyles.FormGroup>
-                      <label htmlFor="contact">연락처</label>
-                      <input
-                        type="text"
-                        id="contact"
-                        name="contact"
-                        value={newStudent.contact}
-                        onChange={handleInputChange}
-                        placeholder="연락처를 입력하세요"
-                      />
-                    </ClassroomStudentsStyles.FormGroup>
+                          <ClassroomStudentsStyles.FormGroup style={{ flex: 1 }}>
+                            <label htmlFor="classNum">반</label>
+                            <input
+                              type="number"
+                              id="classNum"
+                              name="classNum"
+                              min="1"
+                              value={1} // 교사의 담당 반 정보
+                              readOnly
+                              style={{ backgroundColor: "#f0f0f0" }}
+                            />
+                          </ClassroomStudentsStyles.FormGroup>
 
-                    <ClassroomStudentsStyles.FormGroup>
-                      <label htmlFor="note">특이사항</label>
-                      <textarea
-                        id="note"
-                        name="note"
-                        value={newStudent.note}
-                        onChange={handleInputChange}
-                        placeholder="특이사항을 입력하세요"
-                        rows={3}
-                      ></textarea>
-                    </ClassroomStudentsStyles.FormGroup>
+                          <ClassroomStudentsStyles.FormGroup style={{ flex: 1 }}>
+                            <label htmlFor="number">번호</label>
+                            <input
+                              type="number"
+                              id="number"
+                              name="number"
+                              min="1"
+                              value={newStudent.number}
+                              onChange={handleInputChange}
+                              placeholder="번호"
+                            />
+                          </ClassroomStudentsStyles.FormGroup>
+                        </div>
+
+                        <ClassroomStudentsStyles.FormGroup>
+                          <label htmlFor="birthDate">생년월일 *</label>
+                          <input
+                            type="date"
+                            id="birthDate"
+                            name="birthDate"
+                            value={newStudent.birthDate}
+                            onChange={handleInputChange}
+                            required
+                          />
+                        </ClassroomStudentsStyles.FormGroup>
+
+                        <ClassroomStudentsStyles.FormGroup>
+                          <label>성별</label>
+                          <div style={{ display: "flex", gap: "1rem", marginTop: "0.5rem" }}>
+                            <label 
+                              style={{ 
+                                display: "flex", 
+                                alignItems: "center", 
+                                cursor: "pointer",
+                                padding: "8px 16px", 
+                                borderRadius: "20px", 
+                                border: `1px solid ${colors.primary.main}`,
+                                backgroundColor: newStudent.gender === "MALE" ? colors.primary.main : "transparent",
+                                color: newStudent.gender === "MALE" ? "white" : colors.primary.main,
+                                transition: "all 0.3s ease"
+                              }}
+                            >
+                              <input
+                                type="radio"
+                                name="gender"
+                                value="MALE"
+                                checked={newStudent.gender === "MALE"}
+                                onChange={e => setNewStudent({ ...newStudent, gender: e.target.value as "MALE" | "FEMALE" })}
+                                style={{ marginRight: "0.5rem", opacity: 0, position: "absolute" }}
+                              />
+                              남자
+                            </label>
+                            <label 
+                              style={{ 
+                                display: "flex", 
+                                alignItems: "center", 
+                                cursor: "pointer",
+                                padding: "8px 16px", 
+                                borderRadius: "20px", 
+                                border: `1px solid ${colors.primary.main}`,
+                                backgroundColor: newStudent.gender === "FEMALE" ? colors.primary.main : "transparent",
+                                color: newStudent.gender === "FEMALE" ? "white" : colors.primary.main,
+                                transition: "all 0.3s ease"
+                              }}
+                            >
+                              <input
+                                type="radio"
+                                name="gender"
+                                value="FEMALE"
+                                checked={newStudent.gender === "FEMALE"}
+                                onChange={e => setNewStudent({ ...newStudent, gender: e.target.value as "MALE" | "FEMALE" })}
+                                style={{ marginRight: "0.5rem", opacity: 0, position: "absolute" }}
+                              />
+                              여자
+                            </label>
+                          </div>
+                        </ClassroomStudentsStyles.FormGroup>
+
+                        <ClassroomStudentsStyles.FormGroup>
+                          <label htmlFor="age">나이</label>
+                          <input
+                            type="number"
+                            id="age"
+                            name="age"
+                            min="7"
+                            max="20"
+                            value={newStudent.age}
+                            onChange={handleInputChange}
+                            placeholder="나이"
+                          />
+                        </ClassroomStudentsStyles.FormGroup>
+                      </>
+                    ) : (
+                      <>
+                        <h3 style={{ marginBottom: "1.5rem", color: colors.primary.main }}>
+                          연락처 정보
+                        </h3>
+                        <ClassroomStudentsStyles.FormGroup>
+                          <label htmlFor="address">주소</label>
+                          <div style={{ display: "flex" }}>
+                            <input
+                              type="text"
+                              id="address"
+                              name="address"
+                              value={newStudent.address}
+                              onChange={handleInputChange}
+                              placeholder="주소를 입력하세요"
+                              style={{ flex: 1 }}
+                              readOnly
+                            />
+                            <button 
+                              type="button" 
+                              onClick={() => setIsAddressModalOpen(true)}
+                              style={{ 
+                                marginLeft: "8px", 
+                                padding: "0 16px", 
+                                backgroundColor: colors.primary.main,
+                                color: "white",
+                                border: "none",
+                                borderRadius: "4px",
+                                cursor: "pointer"
+                              }}
+                            >
+                              주소 검색
+                            </button>
+                          </div>
+                        </ClassroomStudentsStyles.FormGroup>
+
+                        {isAddressModalOpen && (
+                          <div style={{ 
+                            position: "fixed", 
+                            top: 0, 
+                            left: 0, 
+                            width: "100%", 
+                            height: "100%", 
+                            backgroundColor: "rgba(0, 0, 0, 0.5)",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            zIndex: 1100
+                          }}>
+                            <div style={{ 
+                              backgroundColor: "white", 
+                              padding: "20px", 
+                              borderRadius: "8px",
+                              width: "500px",
+                              maxWidth: "90%",
+                              position: "relative"
+                            }}>
+                              <button 
+                                onClick={() => setIsAddressModalOpen(false)}
+                                style={{ 
+                                  position: "absolute", 
+                                  top: "10px", 
+                                  right: "10px",
+                                  background: "none",
+                                  border: "none",
+                                  fontSize: "18px",
+                                  cursor: "pointer",
+                                  zIndex: 1
+                                }}
+                              >
+                                ✕
+                              </button>
+                              <DaumPostcode onComplete={handleComplete} />
+                            </div>
+                          </div>
+                        )}
+
+                        <ClassroomStudentsStyles.FormGroup>
+                          <label htmlFor="contact">연락처</label>
+                          <input
+                            type="text"
+                            id="contact"
+                            name="contact"
+                            value={newStudent.contact}
+                            onChange={handleInputChange}
+                            placeholder="연락처를 입력하세요"
+                          />
+                        </ClassroomStudentsStyles.FormGroup>
+
+                        <ClassroomStudentsStyles.FormGroup>
+                          <label htmlFor="parentContact">보호자 연락처</label>
+                          <input
+                            type="text"
+                            id="parentContact"
+                            name="parentContact"
+                            value={newStudent.parentContact}
+                            onChange={handleInputChange}
+                            placeholder="보호자 연락처를 입력하세요"
+                          />
+                        </ClassroomStudentsStyles.FormGroup>
+                      </>
+                    )}
                   </ClassroomStudentsStyles.ModalContent>
 
                   <ClassroomStudentsStyles.ModalFooter>
-                    <ClassroomStudentsStyles.CancelButton
-                      onClick={handleCloseModal}
-                    >
-                      취소
-                    </ClassroomStudentsStyles.CancelButton>
-                    <ClassroomStudentsStyles.SaveButton
-                      onClick={handleAddStudent}
-                    >
-                      저장
-                    </ClassroomStudentsStyles.SaveButton>
+                    {currentStep === 1 ? (
+                      <>
+                        <ClassroomStudentsStyles.CancelButton
+                          onClick={handleCloseModal}
+                        >
+                          취소
+                        </ClassroomStudentsStyles.CancelButton>
+                        <ClassroomStudentsStyles.SaveButton
+                          onClick={handleNextStep}
+                        >
+                          다음
+                        </ClassroomStudentsStyles.SaveButton>
+                      </>
+                    ) : (
+                      <>
+                        <ClassroomStudentsStyles.CancelButton
+                          onClick={handlePrevStep}
+                        >
+                          이전
+                        </ClassroomStudentsStyles.CancelButton>
+                        <ClassroomStudentsStyles.SaveButton
+                          onClick={handleAddStudent}
+                        >
+                          저장
+                        </ClassroomStudentsStyles.SaveButton>
+                      </>
+                    )}
                   </ClassroomStudentsStyles.ModalFooter>
                 </>
               )}
             </ClassroomStudentsStyles.Modal>
           </ClassroomStudentsStyles.ModalOverlay>
         )}
+
+        {/* 학생 상세 정보 모달 */}
+        <AnimatePresence>
+          {isDetailModalOpen && studentDetail && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                backgroundColor: "rgba(0, 0, 0, 0.5)",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                zIndex: 1000,
+              }}
+            >
+              <motion.div
+                initial={{ y: 50 }}
+                animate={{ y: 0 }}
+                exit={{ y: 50 }}
+                style={{
+                  backgroundColor: "white",
+                  borderRadius: "8px",
+                  padding: "24px",
+                  width: "100%",
+                  maxWidth: "500px",
+                  boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+                  position: "relative",
+                }}
+              >
+                <button
+                  onClick={handleCloseDetailModal}
+                  style={{
+                    position: "absolute",
+                    top: "12px",
+                    right: "12px",
+                    background: "none",
+                    border: "none",
+                    fontSize: "20px",
+                    cursor: "pointer",
+                  }}
+                >
+                  ✕
+                </button>
+                <h2
+                  style={{ marginBottom: "20px", color: colors.primary.main }}
+                >
+                  학생 상세 정보
+                </h2>
+                {isDetailLoading ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      padding: "20px",
+                    }}
+                  >
+                    <p>정보를 불러오는 중입니다...</p>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ marginBottom: "16px" }}>
+                      <ClassroomStudentsStyles.DetailItem>
+                        <span>이름:</span>
+                        <strong>{studentDetail.name}</strong>
+                      </ClassroomStudentsStyles.DetailItem>
+                      <ClassroomStudentsStyles.DetailItem>
+                        <span>학년/반/번호:</span>
+                        <strong>
+                          {`${studentDetail.grade || "-"}학년 ${
+                            studentDetail.classNum || "-"
+                          }반 ${studentDetail.studentNum || "-"}번`}
+                        </strong>
+                      </ClassroomStudentsStyles.DetailItem>
+                      <ClassroomStudentsStyles.DetailItem>
+                        <span>생년월일:</span>
+                        <strong>{studentDetail.birthDate}</strong>
+                      </ClassroomStudentsStyles.DetailItem>
+                      <ClassroomStudentsStyles.DetailItem>
+                        <span>성별:</span>
+                        <strong>{studentDetail.gender}</strong>
+                      </ClassroomStudentsStyles.DetailItem>
+                      <ClassroomStudentsStyles.DetailItem>
+                        <span>주소:</span>
+                        <strong>{studentDetail.address}</strong>
+                      </ClassroomStudentsStyles.DetailItem>
+                      <ClassroomStudentsStyles.DetailItem>
+                        <span>연락처:</span>
+                        <strong>{studentDetail.contact}</strong>
+                      </ClassroomStudentsStyles.DetailItem>
+                      <ClassroomStudentsStyles.DetailItem>
+                        <span>입학일:</span>
+                        <strong>{studentDetail.entranceDate}</strong>
+                      </ClassroomStudentsStyles.DetailItem>
+                    </div>
+                    <button
+                      onClick={handleCloseDetailModal}
+                      style={{
+                        width: "100%",
+                        padding: "10px",
+                        backgroundColor: colors.primary.main,
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        marginTop: "10px",
+                      }}
+                    >
+                      닫기
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </ContentContainer>
     </DashboardLayout>
   );

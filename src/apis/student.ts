@@ -20,6 +20,23 @@ export interface Student {
   name: string;
 }
 
+// 학생 상세 정보 인터페이스
+export interface StudentDetailResponse {
+  code: number;
+  message: string;
+  data: {
+    name: string;
+    birthDate: string;
+    gender: string;
+    address: string;
+    contact: string;
+    entranceDate: string;
+    grade: number;
+    classNum: number;
+    number: number;
+  };
+}
+
 // 학생 성적 응답 인터페이스
 export interface StudentScoreResponse {
   code: number;
@@ -195,6 +212,88 @@ export const editStudentScore = async (
     return response.data;
   } catch (error) {
     console.error("학생 성적 편집 오류:", error);
+    if (axios.isAxiosError(error) && error.response) {
+      console.error("서버 응답 데이터:", error.response.data);
+      console.error("서버 응답 상태 코드:", error.response.status);
+    }
+    throw error;
+  }
+};
+
+/**
+ * 학생 상세 정보 조회
+ * @param studentId 학생 ID
+ */
+export const getStudentDetail = async (
+  studentId: number
+): Promise<StudentDetailResponse> => {
+  const token = localStorage.getItem("token");
+
+  try {
+    const response = await axios.get<StudentDetailResponse>(
+      `${BASE_URL}/student/info/${studentId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("학생 상세 정보 조회 실패:", error);
+    throw error;
+  }
+};
+
+// 학생 등록 요청 인터페이스
+export interface EnrollStudentRequest {
+  students: {
+    userName: string;
+    grade: number;
+    classNum: number;
+    number: number;
+    userType: "STUDENT";
+    age: number;
+    address: string;
+    gender: "MALE" | "FEMALE";
+    birthDate: string;
+    contact: string;
+    parentContact: string;
+  }[];
+}
+
+// 학생 등록 응답 인터페이스
+export interface EnrollStudentResponse {
+  code: number;
+  message: string;
+  data: {
+    enrolledCount: number;
+  };
+}
+
+/**
+ * 학생 등록 (1명 이상)
+ * @param students 등록할 학생 정보 배열
+ */
+export const enrollStudents = async (
+  students: EnrollStudentRequest['students']
+): Promise<EnrollStudentResponse> => {
+  const token = localStorage.getItem("token");
+
+  try {
+    const response = await axios.post<EnrollStudentResponse>(
+      `${BASE_URL}/teacher/enroll/students`,
+      { students },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("학생 등록 실패:", error);
     if (axios.isAxiosError(error) && error.response) {
       console.error("서버 응답 데이터:", error.response.data);
       console.error("서버 응답 상태 코드:", error.response.status);

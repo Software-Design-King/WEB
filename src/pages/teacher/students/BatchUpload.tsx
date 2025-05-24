@@ -6,9 +6,16 @@ import * as XLSX from 'xlsx';
 // 학생 데이터 인터페이스
 interface StudentData {
   studentNumber: string; // 번호
-  name: string;
-  contact: string;
-  note: string;
+  name: string; // 이름
+  grade: string; // 학년
+  classNum: string; // 반
+  gender: string; // 성별
+  age: string; // 나이
+  birthDate: string; // 생년월일
+  address: string; // 주소
+  contact: string; // 연락처
+  parentContact: string; // 보호자 연락처
+  note: string; // 특이사항
 }
 
 interface BatchUploadProps {
@@ -200,10 +207,17 @@ const BatchUpload: React.FC<BatchUploadProps> = ({ onUpload, onCancel }) => {
         
         // Map the data to our student interface
         const mappedData: StudentData[] = jsonData.map((row) => ({
-          studentNumber: row['번호'] || row['studentNumber'] || '',
-          name: row['이름'] || row['name'] || '',
-          contact: row['연락처'] || row['contact'] || '',
-          note: row['특이사항'] || row['note'] || '',
+          studentNumber: String(row['번호'] || row['studentNumber'] || ''),
+          name: String(row['이름'] || row['name'] || ''),
+          grade: String(row['학년'] || row['grade'] || ''),
+          classNum: String(row['반'] || row['classNum'] || ''),
+          gender: String(row['성별'] || row['gender'] || ''),
+          age: String(row['나이'] || row['age'] || ''),
+          birthDate: String(row['생년월일'] || row['birthDate'] || ''),
+          address: String(row['주소'] || row['address'] || ''),
+          contact: String(row['연락처'] || row['contact'] || ''),
+          parentContact: String(row['보호자 연락처'] || row['parentContact'] || ''),
+          note: String(row['특이사항'] || row['note'] || ''),
         }));
         
         setStudents(mappedData);
@@ -249,11 +263,31 @@ const BatchUpload: React.FC<BatchUploadProps> = ({ onUpload, onCancel }) => {
     const worksheet = XLSX.utils.json_to_sheet([
       {
         '번호': '1',
-        '이름': '권도훈',
+        '이름': '김민준',
+        '성별': '남',
+        '나이': '16',
+        '생년월일': '2009-05-15',
+        '주소': '서울시 강남구 테헤란로 123',
         '연락처': '010-1234-5678',
+        '보호자 연락처': '010-9876-5432',
         '특이사항': ''
       }
     ]);
+    
+    // 열 너비 자동 조정
+    const wscols = [
+      { wch: 8 },  // 번호
+      { wch: 15 }, // 이름
+      { wch: 8 },  // 성별
+      { wch: 8 },  // 나이
+      { wch: 15 }, // 생년월일
+      { wch: 35 }, // 주소
+      { wch: 15 }, // 연락처
+      { wch: 15 }, // 보호자 연락처
+      { wch: 20 }  // 특이사항
+    ];
+    
+    worksheet['!cols'] = wscols;
     
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, '학생목록');
@@ -296,7 +330,7 @@ const BatchUpload: React.FC<BatchUploadProps> = ({ onUpload, onCancel }) => {
       
       <HelpText>
         학생 정보를 대량으로 추가하려면 템플릿을 다운로드하여 정보를 입력한 후 업로드하세요.
-        '번호'와 '이름'은 필수 항목입니다.
+        '번호'와 '이름'은 필수 항목입니다. 학년과 반은 교사 정보에서 자동으로 설정됩니다.
       </HelpText>
       
       {students.length > 0 && (
@@ -309,10 +343,9 @@ const BatchUpload: React.FC<BatchUploadProps> = ({ onUpload, onCancel }) => {
             <Table>
               <thead>
                 <tr>
-                  <Th width="10%">번호</Th>
-                  <Th width="25%">이름</Th>
-                  <Th width="20%">연락처</Th>
-                  <Th width="45%">특이사항</Th>
+                  <Th width="15%">번호</Th>
+                  <Th width="45%">이름</Th>
+                  <Th width="40%">성별</Th>
                 </tr>
               </thead>
               <tbody>
@@ -320,8 +353,7 @@ const BatchUpload: React.FC<BatchUploadProps> = ({ onUpload, onCancel }) => {
                   <tr key={index}>
                     <Td>{student.studentNumber}</Td>
                     <Td>{student.name}</Td>
-                    <Td>{student.contact}</Td>
-                    <Td>{student.note || '-'}</Td>
+                    <Td>{student.gender}</Td>
                   </tr>
                 ))}
               </tbody>
