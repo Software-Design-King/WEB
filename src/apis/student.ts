@@ -281,8 +281,8 @@ export const enrollStudents = async (
   const token = localStorage.getItem("token");
 
   try {
-    const response = await axios.post<EnrollStudentResponse>(
-      `${BASE_URL}/teacher/enroll/students`,
+    const response = await axios.post(
+      `${BASE_URL}/student/enroll`,
       { students },
       {
         headers: {
@@ -291,13 +291,78 @@ export const enrollStudents = async (
         },
       }
     );
+
     return response.data;
   } catch (error) {
-    console.error("학생 등록 실패:", error);
-    if (axios.isAxiosError(error) && error.response) {
-      console.error("서버 응답 데이터:", error.response.data);
-      console.error("서버 응답 상태 코드:", error.response.status);
-    }
-    throw error;
+    console.error("학생 등록 오류:", error);
+    
+    // 기본 에러 응답 반환
+    return {
+      code: 50000,
+      message: "학생 등록에 실패했습니다.",
+      data: {
+        enrolledCount: 0,
+      },
+    };
+  }
+};
+
+// 학생 정보 수정 요청 인터페이스
+export interface UpdateStudentInfoRequest {
+  name?: string;
+  birthDate?: string; // yyyy-mm-dd 형식
+  gender?: string; // 'MALE' 또는 'FEMALE'
+  address?: string;
+  contact?: string; // 연락처
+  entranceDate?: string; // yyyy-mm-dd 형식
+  grade?: number;
+  classNum?: number;
+  studentNum?: number;
+}
+
+// 학생 정보 수정 응답 인터페이스
+export interface UpdateStudentInfoResponse {
+  code: number;
+  message: string;
+  data: {
+    updatedFields: string[];
+  };
+}
+
+/**
+ * 학생 정보 수정
+ * @param studentId 학생 ID
+ * @param updateData 수정할 학생 정보
+ */
+export const updateStudentInfo = async (
+  studentId: number,
+  updateData: UpdateStudentInfoRequest
+): Promise<UpdateStudentInfoResponse> => {
+  const token = localStorage.getItem("token");
+
+  try {
+    const response = await axios.patch(
+      `${BASE_URL}/student/info/${studentId}`,
+      updateData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("학생 정보 수정 오류:", error);
+    
+    // 기본 에러 응답 반환
+    return {
+      code: 50000,
+      message: "학생 정보 수정에 실패했습니다.",
+      data: {
+        updatedFields: [],
+      },
+    };
   }
 };

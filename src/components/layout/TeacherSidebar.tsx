@@ -184,7 +184,7 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
           </MenuIcon>
           <MenuText isCollapsed={isCollapsed}>학생 목록</MenuText>
         </MenuItem>
-
+        
         <MenuItem
           active={isActive("/teacher/grades")}
           isCollapsed={isCollapsed}
@@ -212,9 +212,9 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
         </MenuItem>
 
         <MenuItem
-          active={isActive("/teacher/records")}
+          active={isActive("/teacher/studentRecords")}
           isCollapsed={isCollapsed}
-          onClick={() => navigate("/teacher/records")}
+          onClick={() => navigate("/teacher/studentRecords")}
         >
           <MenuIcon isCollapsed={isCollapsed}>
             <svg
@@ -225,9 +225,9 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
-                d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2ZM16 18H8V16H16V18ZM16 14H8V12H16V14ZM13 9V3.5L18.5 9H13Z"
+                d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"
                 fill={
-                  isActive("/teacher/records")
+                  isActive("/teacher/studentRecords")
                     ? colors.primary.main
                     : colors.text.secondary
                 }
@@ -236,6 +236,8 @@ export const TeacherSidebar: React.FC<TeacherSidebarProps> = ({
           </MenuIcon>
           <MenuText isCollapsed={isCollapsed}>학생부 관리</MenuText>
         </MenuItem>
+
+
       </MenuGroup>
 
       <MenuGroup>

@@ -22,7 +22,6 @@ const ClassroomStudents = lazy(() => import("./pages/teacher/students"));
 const StudentGradesPage = lazy(() => import("./pages/student/grades"));
 const StudentRecordsPage = lazy(() => import("./pages/student/records"));
 const TeacherGradesPage = lazy(() => import("./pages/teacher/grades"));
-const TeacherRecordsPage = lazy(() => import("./pages/teacher/records"));
 const TeacherFeedbackPage = lazy(() => import("./pages/teacher/feedback"));
 const TeacherConsultationPage = lazy(
   () => import("./pages/teacher/consultation")
@@ -31,6 +30,8 @@ const StudentFeedbackPage = lazy(() => import("./pages/student/feedback"));
 const StudentConsultationPage = lazy(
   () => import("./pages/student/consultation")
 );
+const TeacherStudentRecordsPage = lazy(() => import("./pages/teacher/studentRecords"));
+
 
 // 로딩 컴포넌트
 const Loading = () => <div>로딩 중...</div>;
@@ -271,14 +272,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/teacher/records"
-        element={
-          <ProtectedRoute requiredRole="TEACHER">
-            <TeacherRecordsPage />
-          </ProtectedRoute>
-        }
-      />
+
       <Route
         path="/teacher/feedback"
         element={
@@ -300,6 +294,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole="TEACHER">
             <ClassroomStudents />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/teacher/studentRecords"
+        element={
+          <ProtectedRoute requiredRole="TEACHER">
+            <TeacherStudentRecordsPage />
           </ProtectedRoute>
         }
       />
