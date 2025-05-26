@@ -9,8 +9,9 @@ import {
   createFeedback,
   Feedback,
 } from "../../../apis/feedback";
-import { message, Spin, Empty, Switch } from "antd";
+import { message, Spin, Empty, Switch, Select, Badge } from "antd";
 import { useUserStore } from "../../../stores/userStore";
+import { PlusOutlined, EditOutlined, BookOutlined, UserOutlined, FieldTimeOutlined, ScheduleOutlined, HistoryOutlined } from "@ant-design/icons";
 
 // 타입 정의
 interface FeedbackFormData {
@@ -21,6 +22,15 @@ interface FeedbackFormData {
   OthersFeed: string;
   isSharedWithStudent: boolean;
   isSharedWithParent: boolean;
+}
+
+type FeedbackType = 'scoreFeed' | 'behaviorFeed' | 'attendanceFeed' | 'attitudeFeed' | 'OthersFeed';
+
+interface FeedbackTypeOption {
+  value: FeedbackType;
+  label: string;
+  icon: React.ReactNode;
+  color: string;
 }
 
 // 스타일 컴포넌트
@@ -95,6 +105,101 @@ const Card = styled.div`
   margin-bottom: 1.5rem;
 `;
 
+const StickyNoteContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-top: 1rem;
+`;
+
+const StickyNote = styled.div<{ color: string }>`
+  background-color: ${props => props.color};
+  border-radius: 8px;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 300px;
+  min-height: 200px;
+  position: relative;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  transform: rotate(${() => Math.random() * 2 - 1}deg);
+  
+  &:hover {
+    transform: translateY(-5px) rotate(0);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+  }
+  
+  &:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 20px;
+    width: 40px;
+    height: 10px;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 0 0 5px 5px;
+  }
+`;
+
+const NoteHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.1);
+`;
+
+const NoteTitle = styled.h4`
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: rgba(0, 0, 0, 0.75);
+`;
+
+const NoteContent = styled.p`
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+  flex-grow: 1;
+  color: rgba(0, 0, 0, 0.7);
+  word-break: break-word;
+`;
+
+const NewNoteCard = styled.div<{ active?: boolean }>`
+  background-color: white;
+  border: 2px dashed ${props => props.active ? colors.primary.main : colors.grey[300]};
+  border-radius: 8px;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 300px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    border-color: ${colors.primary.main};
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+`;
+
+const NewNoteIcon = styled.div`
+  font-size: 2rem;
+  color: ${colors.primary.main};
+  margin-bottom: 1rem;
+`;
+
+const NewNoteText = styled.p`
+  font-size: 1rem;
+  color: ${colors.text.secondary};
+  margin: 0;
+  text-align: center;
+`;
+
 const FormTitle = styled.h3`
   font-size: 1.1rem;
   font-weight: 600;
@@ -111,15 +216,19 @@ const CompactForm = styled.form`
 `;
 
 const FormGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 1.25rem;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
 `;
 
 const FormGroup = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  width: 100%;
 `;
 
 const Label = styled.label`
@@ -324,7 +433,9 @@ const TeacherFeedbackPage: React.FC = () => {
   const [selectedStudentId, setSelectedStudentId] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
-  const [visibleFeedbacks, setVisibleFeedbacks] = useState<number>(2);
+  const [visibleFeedbacks, setVisibleFeedbacks] = useState<number>(6);
+  const [selectedFeedbackType, setSelectedFeedbackType] = useState<FeedbackType>("scoreFeed");
+  const [showNewNoteForm, setShowNewNoteForm] = useState<boolean>(false);
   const [formData, setFormData] = useState<FeedbackFormData>({
     scoreFeed: "",
     behaviorFeed: "",
@@ -334,6 +445,20 @@ const TeacherFeedbackPage: React.FC = () => {
     isSharedWithStudent: false,
     isSharedWithParent: false,
   });
+  
+  // 피드백 유형 옵션
+  const feedbackTypeOptions: FeedbackTypeOption[] = [
+    { value: "scoreFeed", label: "학업 성취", icon: <BookOutlined />, color: "#FFECB3" },
+    { value: "behaviorFeed", label: "행동 발달", icon: <UserOutlined />, color: "#E1F5FE" },
+    { value: "attendanceFeed", label: "출석 상황", icon: <FieldTimeOutlined />, color: "#E8F5E9" },
+    { value: "attitudeFeed", label: "학습 태도", icon: <EditOutlined />, color: "#F3E5F5" },
+    { value: "OthersFeed", label: "기타 사항", icon: <ScheduleOutlined />, color: "#FFEBEE" },
+  ];
+  
+  // 현재 선택된 피드백 유형 정보 가져오기
+  const getCurrentFeedbackTypeOption = () => {
+    return feedbackTypeOptions.find(option => option.value === selectedFeedbackType) || feedbackTypeOptions[0];
+  };
 
   // 피드백 목록 조회
   const fetchFeedbacks = useCallback(async () => {
@@ -475,86 +600,138 @@ const TeacherFeedbackPage: React.FC = () => {
           {selectedStudentId ? (
             /* 내용 영역 */
             activeTab === "write" ? (
-              <Card>
+              <div>
                 <FormTitle>학생 피드백 작성</FormTitle>
-                <CompactForm onSubmit={handleSubmitFeedback}>
-                  <FormGrid>
-                    <FormGroup>
-                      <Label>학업 성취</Label>
-                      <TextArea 
-                        placeholder="학업 성취에 대한 피드백을 작성하세요" 
-                        value={formData.scoreFeed}
-                        onChange={(e) => handleInputChange("scoreFeed", e.target.value)}
-                      />
-                    </FormGroup>
-                    <FormGroup>
-                      <Label>행동 발달</Label>
-                      <TextArea 
-                        placeholder="행동 발달에 대한 피드백을 작성하세요" 
-                        value={formData.behaviorFeed}
-                        onChange={(e) => handleInputChange("behaviorFeed", e.target.value)}
-                      />
-                    </FormGroup>
-                    <FormGroup>
-                      <Label>출석 상황</Label>
-                      <TextArea 
-                        placeholder="출석 상황에 대한 피드백을 작성하세요" 
-                        value={formData.attendanceFeed}
-                        onChange={(e) => handleInputChange("attendanceFeed", e.target.value)}
-                      />
-                    </FormGroup>
-                    <FormGroup>
-                      <Label>학습 태도</Label>
-                      <TextArea 
-                        placeholder="학습 태도에 대한 피드백을 작성하세요" 
-                        value={formData.attitudeFeed}
-                        onChange={(e) => handleInputChange("attitudeFeed", e.target.value)}
-                      />
-                    </FormGroup>
-                    <FormGroup>
-                      <Label>기타 사항</Label>
-                      <TextArea 
-                        placeholder="기타 사항에 대한 피드백을 작성하세요" 
-                        value={formData.OthersFeed}
-                        onChange={(e) => handleInputChange("OthersFeed", e.target.value)}
-                      />
-                    </FormGroup>
-                  </FormGrid>
+                
+                {!showNewNoteForm ? (
+                  <StickyNoteContainer>
+                    {/* 새 피드백 추가 버튼 */}
+                    <NewNoteCard onClick={() => setShowNewNoteForm(true)}>
+                      <NewNoteIcon>
+                        <PlusOutlined />
+                      </NewNoteIcon>
+                      <NewNoteText>새 피드백 노트 추가하기</NewNoteText>
+                    </NewNoteCard>
+                    
+                    {/* 기존에 작성된 피드백 표시 */}
+                    {Object.entries(formData)
+                      .filter(([key, value]) => 
+                        key !== 'isSharedWithStudent' && 
+                        key !== 'isSharedWithParent' && 
+                        value.trim() !== ''
+                      )
+                      .map(([key, value]) => {
+                        const option = feedbackTypeOptions.find(opt => opt.value === key);
+                        if (!option) return null;
+                        
+                        return (
+                          <StickyNote 
+                            key={key} 
+                            color={option.color}
+                            onClick={() => {
+                              setSelectedFeedbackType(key as FeedbackType);
+                              setShowNewNoteForm(true);
+                            }}
+                          >
+                            <NoteHeader>
+                              {option.icon} <NoteTitle>{option.label}</NoteTitle>
+                            </NoteHeader>
+                            <NoteContent>{value}</NoteContent>
+                          </StickyNote>
+                        );
+                      })}
+                  </StickyNoteContainer>
+                ) : (
+                  <Card>
+                    <FormTitle>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          {getCurrentFeedbackTypeOption().icon} {getCurrentFeedbackTypeOption().label} 피드백 작성
+                        </div>
+                        <SecondaryButton 
+                          style={{ padding: '0.5rem', fontSize: '0.8rem' }}
+                          onClick={() => setShowNewNoteForm(false)}
+                        >
+                          목록으로 돌아가기
+                        </SecondaryButton>
+                      </div>
+                    </FormTitle>
+                    <CompactForm onSubmit={handleSubmitFeedback}>
+                      <FormGrid>
+                        <FormGroup>
+                          <Label>피드백 유형</Label>
+                          <Select
+                            value={selectedFeedbackType}
+                            onChange={(value: FeedbackType) => setSelectedFeedbackType(value)}
+                            style={{ width: '100%' }}
+                          >
+                            {feedbackTypeOptions.map(option => (
+                              <Select.Option key={option.value} value={option.value}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <Badge color={option.color} />
+                                  {option.icon} {option.label}
+                                </div>
+                              </Select.Option>
+                            ))}
+                          </Select>
+                        </FormGroup>
+                        
+                        <FormGroup>
+                          <Label>피드백 내용</Label>
+                          <TextArea 
+                            placeholder={`${getCurrentFeedbackTypeOption().label}에 대한 피드백을 작성하세요`}
+                            value={formData[selectedFeedbackType]}
+                            onChange={(e) => handleInputChange(selectedFeedbackType, e.target.value)}
+                            style={{
+                              backgroundColor: `${getCurrentFeedbackTypeOption().color}20`,
+                              borderColor: getCurrentFeedbackTypeOption().color,
+                              minHeight: '150px'
+                            }}
+                          />
+                        </FormGroup>
+                        
+                        <div>
+                          <CheckboxContainer>
+                            <Label>공유 설정</Label>
+                            <CheckboxItem>
+                              <Switch 
+                                checked={formData.isSharedWithStudent}
+                                onChange={(checked) => handleInputChange("isSharedWithStudent", checked)}
+                              />
+                              <CheckboxLabel>
+                                학생에게 공유
+                              </CheckboxLabel>
+                            </CheckboxItem>
+                            <CheckboxItem>
+                              <Switch 
+                                checked={formData.isSharedWithParent}
+                                onChange={(checked) => handleInputChange("isSharedWithParent", checked)}
+                              />
+                              <CheckboxLabel>
+                                학부모에게 공유
+                              </CheckboxLabel>
+                            </CheckboxItem>
+                          </CheckboxContainer>
+                        </div>
 
-                  <div>
-                    <CheckboxContainer>
-                      <Label>공유 설정</Label>
-                      <CheckboxItem>
-                        <Switch 
-                          checked={formData.isSharedWithStudent}
-                          onChange={(checked) => handleInputChange("isSharedWithStudent", checked)}
-                        />
-                        <CheckboxLabel>
-                          학생에게 공유
-                        </CheckboxLabel>
-                      </CheckboxItem>
-                      <CheckboxItem>
-                        <Switch 
-                          checked={formData.isSharedWithParent}
-                          onChange={(checked) => handleInputChange("isSharedWithParent", checked)}
-                        />
-                        <CheckboxLabel>
-                          학부모에게 공유
-                        </CheckboxLabel>
-                      </CheckboxItem>
-                    </CheckboxContainer>
-                  </div>
-
-                  <ButtonContainer>
-                    <PrimaryButton type="submit" disabled={isLoading}>
-                      {isLoading ? "저장 중..." : "피드백 저장"}
-                    </PrimaryButton>
-                  </ButtonContainer>
-                </CompactForm>
-              </Card>
+                        <ButtonContainer>
+                          <PrimaryButton type="submit" disabled={isLoading}>
+                            {isLoading ? "저장 중..." : "피드백 저장"}
+                          </PrimaryButton>
+                        </ButtonContainer>
+                      </FormGrid>
+                    </CompactForm>
+                  </Card>
+                )}
+              </div>
             ) : (
-              <Card>
-                <FormTitle>피드백 이력</FormTitle>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <FormTitle>
+                    <HistoryOutlined style={{ marginRight: '8px' }} /> 피드백 이력
+                  </FormTitle>
+                </div>
+                
                 {isLoading ? (
                   <LoadingContainer>
                     <Spin tip="피드백 이력을 불러오는 중..." />
@@ -563,56 +740,55 @@ const TeacherFeedbackPage: React.FC = () => {
                   <Empty description="피드백 이력이 없습니다." />
                 ) : (
                   <>
-                    <FeedbackList>
-                      {feedbacks.slice(0, visibleFeedbacks).map((feedback, index) => (
-                        <FeedbackItem key={index}>
-                          <FeedbackHeader>
-                            <FeedbackDate>{formatDate(feedback.createdAt)}</FeedbackDate>
-                            <FeedbackGrade>{feedback.grade}학년</FeedbackGrade>
-                            <SharingInfo>
-                              {feedback.sharedWithStudent && (
-                                <SharingStatus shared={true}>학생 공유</SharingStatus>
-                              )}
-                              {feedback.sharedWithParent && (
-                                <SharingStatus shared={true}>학부모 공유</SharingStatus>
-                              )}
-                            </SharingInfo>
-                          </FeedbackHeader>
-                          <FeedbackContent>
-                            <FeedbackSection>
-                              <SectionTitle>학업 성취</SectionTitle>
-                              <SectionContent>{feedback.scoreFeed}</SectionContent>
-                            </FeedbackSection>
-                            <FeedbackSection>
-                              <SectionTitle>행동 발달</SectionTitle>
-                              <SectionContent>{feedback.behaviorFeed}</SectionContent>
-                            </FeedbackSection>
-                            <FeedbackSection>
-                              <SectionTitle>출석 상황</SectionTitle>
-                              <SectionContent>{feedback.attendanceFeed}</SectionContent>
-                            </FeedbackSection>
-                            <FeedbackSection>
-                              <SectionTitle>학습 태도</SectionTitle>
-                              <SectionContent>{feedback.attitudeFeed}</SectionContent>
-                            </FeedbackSection>
-                            <FeedbackSection>
-                              <SectionTitle>기타 사항</SectionTitle>
-                              <SectionContent>{feedback.othersFeed}</SectionContent>
-                            </FeedbackSection>
-                          </FeedbackContent>
-                        </FeedbackItem>
-                      ))}
-                    </FeedbackList>
+                    <StickyNoteContainer>
+                      {feedbacks.slice(0, visibleFeedbacks).map((feedback, index) => {
+                        const createdDate = new Date(feedback.createdAt);
+                        // 피드백 내용이 있는 필드만 표시
+                        const feedbackFields = [
+                          { key: 'scoreFeed', value: feedback.scoreFeed, label: '학업 성취', icon: <BookOutlined />, color: '#FFECB3' },
+                          { key: 'behaviorFeed', value: feedback.behaviorFeed, label: '행동 발달', icon: <UserOutlined />, color: '#E1F5FE' },
+                          { key: 'attendanceFeed', value: feedback.attendanceFeed, label: '출석 상황', icon: <FieldTimeOutlined />, color: '#E8F5E9' },
+                          { key: 'attitudeFeed', value: feedback.attitudeFeed, label: '학습 태도', icon: <EditOutlined />, color: '#F3E5F5' },
+                          { key: 'othersFeed', value: feedback.othersFeed, label: '기타 사항', icon: <ScheduleOutlined />, color: '#FFEBEE' }
+                        ].filter(field => field.value && field.value.trim() !== '');
+                        
+                        return feedbackFields.map((field, fieldIndex) => (
+                          <StickyNote 
+                            key={`${index}-${field.key}`} 
+                            color={field.color}
+                            style={{ transform: `rotate(${Math.random() * 3 - 1.5}deg)` }}
+                          >
+                            <NoteHeader>
+                              {field.icon} <NoteTitle>{field.label}</NoteTitle>
+                            </NoteHeader>
+                            <div style={{ marginBottom: '0.75rem', fontSize: '0.8rem', color: 'rgba(0,0,0,0.5)' }}>
+                              <span style={{ marginRight: '0.5rem' }}>{formatDate(feedback.createdAt)}</span>
+                              <span style={{ marginRight: '0.5rem' }}>{feedback.grade}학년</span>
+                              <div style={{ marginTop: '0.25rem' }}>
+                                {feedback.sharedWithStudent && (
+                                  <Badge status="success" text="학생 공유" style={{ marginRight: '0.5rem' }} />
+                                )}
+                                {feedback.sharedWithParent && (
+                                  <Badge status="success" text="학부모 공유" />
+                                )}
+                              </div>
+                            </div>
+                            <NoteContent>{field.value}</NoteContent>
+                          </StickyNote>
+                        ));
+                      })}
+                    </StickyNoteContainer>
+                    
                     {feedbacks.length > visibleFeedbacks && (
                       <ButtonContainer>
                         <SecondaryButton onClick={handleShowMoreFeedbacks}>
-                          더보기
+                          더 보기
                         </SecondaryButton>
                       </ButtonContainer>
                     )}
                   </>
                 )}
-              </Card>
+              </div>
             )
           ) : (
             <EmptyStateContainer>
