@@ -117,7 +117,7 @@ const NavIcon = styled.div`
   align-items: center;
   justify-content: center;
   margin-bottom: 1.5rem;
-  
+
   svg {
     width: 48px;
     height: 48px;
@@ -179,8 +179,17 @@ const TeacherDashboard = () => {
             onClick={() => (window.location.href = "/teacher/grades")}
           >
             <NavIcon>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM9 17H7V10H9V17ZM13 17H11V7H13V17ZM17 17H15V13H17V17Z" fill={colors.primary.main} />
+              <svg
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM9 17H7V10H9V17ZM13 17H11V7H13V17ZM17 17H15V13H17V17Z"
+                  fill={colors.primary.main}
+                />
               </svg>
             </NavIcon>
             <NavTitle>학생 성적 관리</NavTitle>
@@ -192,12 +201,26 @@ const TeacherDashboard = () => {
 
           {/* 학생부 관리 */}
           <NavigationCard
-            onClick={() => (window.location.href = "/teacher/records")}
+            onClick={() => (window.location.href = "/teacher/studentRecords")}
           >
             <NavIcon>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2Z" fill={colors.primary.main} opacity="0.3" />
-                <path d="M14 2V8H20M16 13H8V15H16V13ZM16 17H8V19H16V17ZM10 9H8V11H10V9Z" stroke={colors.primary.main} strokeWidth="1.5" />
+              <svg
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2Z"
+                  fill={colors.primary.main}
+                  opacity="0.3"
+                />
+                <path
+                  d="M14 2V8H20M16 13H8V15H16V13ZM16 17H8V19H16V17ZM10 9H8V11H10V9Z"
+                  stroke={colors.primary.main}
+                  strokeWidth="1.5"
+                />
               </svg>
             </NavIcon>
             <NavTitle>학생부 관리</NavTitle>
@@ -212,9 +235,22 @@ const TeacherDashboard = () => {
             onClick={() => (window.location.href = "/teacher/feedback")}
           >
             <NavIcon>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M20 2H4C2.9 2 2.01 2.9 2.01 4L2 22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" fill={colors.primary.main} opacity="0.3" />
-                <path d="M13 14H11V12H13V14ZM13 10H11V6H13V10Z" fill={colors.primary.main} />
+              <svg
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M20 2H4C2.9 2 2.01 2.9 2.01 4L2 22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z"
+                  fill={colors.primary.main}
+                  opacity="0.3"
+                />
+                <path
+                  d="M13 14H11V12H13V14ZM13 10H11V6H13V10Z"
+                  fill={colors.primary.main}
+                />
               </svg>
             </NavIcon>
             <NavTitle>피드백 관리</NavTitle>
@@ -228,9 +264,21 @@ const TeacherDashboard = () => {
             onClick={() => (window.location.href = "/teacher/consultation")}
           >
             <NavIcon>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2ZM20 16H6L4 18V4H20V16Z" fill={colors.primary.main} />
-                <path d="M11 12H13V14H11V12ZM11 6H13V10H11V6Z" fill={colors.primary.main} />
+              <svg
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2ZM20 16H6L4 18V4H20V16Z"
+                  fill={colors.primary.main}
+                />
+                <path
+                  d="M11 12H13V14H11V12ZM11 6H13V10H11V6Z"
+                  fill={colors.primary.main}
+                />
               </svg>
             </NavIcon>
             <NavTitle>상담내역 관리</NavTitle>
@@ -244,8 +292,18 @@ const TeacherDashboard = () => {
         {/* 알림 센터 */}
         <AlertCenterContainer>
           <AlertCenterTitle>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: "0.5rem" }}>
-              <path d="M12 22C13.1 22 14 21.1 14 20H10C10 21.1 10.9 22 12 22ZM18 16V11C18 7.93 16.37 5.36 13.5 4.68V4C13.5 3.17 12.83 2.5 12 2.5C11.17 2.5 10.5 3.17 10.5 4V4.68C7.64 5.36 6 7.92 6 11V16L4 18V19H20V18L18 16ZM16 17H8V11C8 8.52 9.51 6.5 12 6.5C14.49 6.5 16 8.52 16 11V17Z" fill={colors.primary.main} />
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ marginRight: "0.5rem" }}
+            >
+              <path
+                d="M12 22C13.1 22 14 21.1 14 20H10C10 21.1 10.9 22 12 22ZM18 16V11C18 7.93 16.37 5.36 13.5 4.68V4C13.5 3.17 12.83 2.5 12 2.5C11.17 2.5 10.5 3.17 10.5 4V4.68C7.64 5.36 6 7.92 6 11V16L4 18V19H20V18L18 16ZM16 17H8V11C8 8.52 9.51 6.5 12 6.5C14.49 6.5 16 8.52 16 11V17Z"
+                fill={colors.primary.main}
+              />
             </svg>
             알림센터
           </AlertCenterTitle>
