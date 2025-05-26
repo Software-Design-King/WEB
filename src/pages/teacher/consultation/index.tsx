@@ -673,6 +673,7 @@ const TeacherConsultationPage: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [showForm, setShowForm] = useState<boolean>(true);
   const [consultations, setConsultations] = useState<ConsultationRecord[]>([]);
+  const [showAllRecords, setShowAllRecords] = useState<boolean>(false);
 
   // 상담 기록 로드 함수 - useCallback으로 감싸서 참조 안정성 확보
   const loadConsultations = useCallback(async () => {
@@ -993,31 +994,38 @@ const TeacherConsultationPage: React.FC = () => {
               <SearchButton
                 onClick={() => {
                   if (!searchTerm.trim()) {
-                    setStudentConsultations(
-                      selectedStudent
-                        ? MOCK_CONSULTATIONS.filter(
-                            (c) => c.studentId === selectedStudent
-                          )
-                        : MOCK_CONSULTATIONS
-                    );
+                    // 검색어가 없으면 전체 기록 로드
+                    loadConsultations();
+                    setShowAllRecords(false);
                     return;
                   }
 
                   const term = searchTerm.toLowerCase();
-                  const filtered = (
-                    selectedStudent
-                      ? MOCK_CONSULTATIONS.filter(
-                          (c) => c.studentId === selectedStudent
-                        )
-                      : MOCK_CONSULTATIONS
-                  ).filter(
-                    (c) =>
-                      c.content.toLowerCase().includes(term) ||
-                      c.nextPlan.toLowerCase().includes(term) ||
-                      c.tags.some((tag) => tag.toLowerCase().includes(term))
-                  );
+                  const filtered = consultations.filter((c) => {
+                    // 내용과 계획에서 검색
+                    const contentMatch = c.content.toLowerCase().includes(term);
+                    const planMatch = c.nextPlan.toLowerCase().includes(term);
 
-                  setStudentConsultations(filtered);
+                    // 태그에서 검색 (한글명으로 매핑하여 검색)
+                    const tagMatch = c.tags.some((tagId) => {
+                      // 태그 ID에 직접 검색어가 포함되는지 확인
+                      const directMatch = tagId.toLowerCase().includes(term);
+
+                      // 태그 ID에 해당하는 한글명에서 검색어가 포함되는지 확인
+                      const tagInfo = TAG_INFO.find((t) => t.id === tagId);
+                      const koreanLabelMatch = tagInfo
+                        ? tagInfo.label.toLowerCase().includes(term)
+                        : false;
+
+                      return directMatch || koreanLabelMatch;
+                    });
+
+                    return contentMatch || planMatch || tagMatch;
+                  });
+
+                  // 검색 결과를 consultations에 저장하여 화면에 반영
+                  setConsultations(filtered);
+                  setShowAllRecords(true); // 검색 결과는 모두 표시
                 }}
               >
                 검색하기
