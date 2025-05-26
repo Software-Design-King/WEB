@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { Input } from "antd";
 import { useUserStore } from "../../../stores/userStore";
 import styled from "@emotion/styled";
 import { colors } from "../../../components/common/Common.styles";
@@ -570,82 +571,9 @@ const ContentSection = styled.div`
   }
 `;
 
-const ContentTitle = styled.h4`
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: ${colors.primary.dark};
-  margin: 0 0 0.5rem 0;
-`;
-
-const ContentText = styled.p`
-  color: ${colors.text.secondary};
-  font-size: 0.9rem;
-  line-height: 1.5;
-  white-space: pre-line;
-  margin: 0 0 0.75rem 0;
-`;
-
-const ConsultationDate = styled.div`
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: ${colors.primary.dark};
-`;
-
-// 임시 데이터
-const MOCK_CONSULTATIONS: ConsultationRecord[] = [
-  {
-    id: "1",
-    studentId: "1",
-    teacherId: "t1",
-    teacherName: "권도훈",
-    date: "2023-05-15",
-    content:
-      "학업 성취도가 떨어지는 원인에 대해 상담함. 집에서 공부할 시간이 부족하다고 함. 방과후 학습 추천.",
-    nextPlan: "방과후 학습 신청하고 2주 후 다시 상담 예정",
-    tags: ["학업상담", "방과후학습"],
-    isSharedWithOtherTeachers: true,
-    createdAt: "2023-05-15T14:30:00",
-    updatedAt: "2023-05-15T14:30:00",
-  },
-  {
-    id: "2",
-    studentId: "1",
-    teacherId: "t2",
-    teacherName: "이수진",
-    date: "2023-05-30",
-    content:
-      "방과후 학습 참여 후 변화에 대해 상담. 공부 시간이 증가했으나 아직 성적 변화는 없음.",
-    nextPlan: "성적 향상 전략에 대해 추가 상담 필요",
-    tags: ["학업상담", "방과후학습", "성적향상"],
-    isSharedWithOtherTeachers: true,
-    createdAt: "2023-05-30T15:20:00",
-    updatedAt: "2023-05-30T15:20:00",
-  },
-  {
-    id: "3",
-    studentId: "2",
-    teacherId: "t1",
-    teacherName: "권도훈",
-    date: "2023-06-02",
-    content:
-      "진로에 대한 고민이 있어 상담 요청. 이공계와 인문계 사이에서 고민 중.",
-    nextPlan: "진로검사 후 다시 상담하기로 함",
-    tags: ["진로상담"],
-    isSharedWithOtherTeachers: false,
-    createdAt: "2023-06-02T13:10:00",
-    updatedAt: "2023-06-02T13:10:00",
-  },
-];
-
-// StudentSidebar 컴포넌트로 대체되었으므로 관련 스타일 컴포넌트 제거
-
 // 컴포넌트
 const TeacherConsultationPage: React.FC = () => {
   const userInfo = useUserStore((state) => state.userInfo);
-
-  // 상담 태그 옵션
-  const COUNSEL_TAGS = ["ACADEMIC", "COMPANIONSHIP", "ETC"];
-
   // 선택된 학생 및 상담 관련 상태
   const [selectedStudent, setSelectedStudent] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -673,17 +601,23 @@ const TeacherConsultationPage: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [showForm, setShowForm] = useState<boolean>(true);
   const [consultations, setConsultations] = useState<ConsultationRecord[]>([]);
-  const [showAllRecords, setShowAllRecords] = useState<boolean>(false);
+  const [displayedConsultations, setDisplayedConsultations] = useState<
+    ConsultationRecord[]
+  >([]);
+  const [displayCount, setDisplayCount] = useState<number>(2);
+  // 상담 내역 상태 관리를 displayedConsultations로 대체했으므로 showAllRecords 제거
 
   // 상담 기록 로드 함수 - useCallback으로 감싸서 참조 안정성 확보
   const loadConsultations = useCallback(async () => {
     if (!selectedStudent) {
       setConsultations([]);
+      setDisplayedConsultations([]);
       return;
     }
 
     setLoading(true);
     setError("");
+    setDisplayCount(2); // 새로운 학생 선택 시 표시 개수 초기화
 
     try {
       console.log(`상담 기록 로드 API 호출: 학생 ID=${selectedStudent}`);
@@ -695,9 +629,9 @@ const TeacherConsultationPage: React.FC = () => {
         // 서버 응답 데이터를 컴포넌트 상태에 맞게 변환
         const serverCounsels = response.data.counsels;
 
-        // 서버 데이터 형식을 컴포넌트에서 사용하는 형식으로 변환
-        const formattedCounsels: ConsultationRecord[] = serverCounsels.map(
-          (counsel, index) => ({
+        // 서버 데이터 형식을 컴포넌트에서 사용하는 형식으로 변환 및 최신순 정렬
+        const formattedCounsels: ConsultationRecord[] = serverCounsels
+          .map((counsel, index) => ({
             id: index.toString(), // 서버에서 id가 없으면 임의로 생성
             studentId: selectedStudent,
             teacherId: userInfo.userId?.toString() || "", // 현재 로그인한 교사 ID
@@ -709,13 +643,19 @@ const TeacherConsultationPage: React.FC = () => {
             isSharedWithOtherTeachers: counsel.shared,
             createdAt: counsel.createdAt,
             updatedAt: counsel.createdAt, // 서버에 updatedAt이 없으면 createdAt 사용
-          })
-        );
+          }))
+          .sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          ); // 최신순 정렬
 
         setConsultations(formattedCounsels);
+        // 처음에는 최대 2개만 표시
+        setDisplayedConsultations(formattedCounsels.slice(0, displayCount));
       } else {
         // 응답은 성공했지만 데이터가 없는 경우
         setConsultations([]);
+        setDisplayedConsultations([]);
       }
     } catch (err) {
       console.error("상담 기록 로드 실패:", err);
@@ -723,7 +663,7 @@ const TeacherConsultationPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedStudent, userInfo.userId, userInfo.name]);
+  }, [selectedStudent, userInfo.userId, userInfo.name, displayCount]);
 
   // 탭 전환 처리
   const handleTabChange = useCallback(
@@ -752,6 +692,14 @@ const TeacherConsultationPage: React.FC = () => {
       loadConsultations();
     }
   }, [selectedStudent, activeTab, loadConsultations]);
+
+  // displayCount가 변경될 때마다 표시되는 상담 내역 업데이트
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      // 검색 중이 아닐 때만 적용
+      setDisplayedConsultations(consultations.slice(0, displayCount));
+    }
+  }, [displayCount, consultations, searchTerm]);
 
   useEffect(() => {
     if (selectedStudent) {
@@ -983,38 +931,43 @@ const TeacherConsultationPage: React.FC = () => {
           <FilterContainer>
             <FilterGroup>
               <Label>검색어</Label>
-              <StyledInput
-                type="text"
+              <Input
                 placeholder="상담 내용이나 태그로 검색"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </FilterGroup>
-            <FilterGroup>
-              <SearchButton
-                onClick={() => {
-                  if (!searchTerm.trim()) {
-                    // 검색어가 없으면 전체 기록 로드
-                    loadConsultations();
-                    setShowAllRecords(false);
+                onChange={(e) => {
+                  const term = e.target.value;
+                  setSearchTerm(term);
+
+                  // 검색어가 변경될 때마다 실시간으로 필터링 적용
+                  if (!term.trim()) {
+                    // 검색어가 없으면 원래 상담 내역 표시 (최신순 2개)
+                    setDisplayedConsultations(
+                      consultations.slice(0, displayCount)
+                    );
                     return;
                   }
 
-                  const term = searchTerm.toLowerCase();
+                  const lowercaseTerm = term.toLowerCase();
                   const filtered = consultations.filter((c) => {
                     // 내용과 계획에서 검색
-                    const contentMatch = c.content.toLowerCase().includes(term);
-                    const planMatch = c.nextPlan.toLowerCase().includes(term);
+                    const contentMatch = c.content
+                      .toLowerCase()
+                      .includes(lowercaseTerm);
+                    const planMatch = c.nextPlan
+                      .toLowerCase()
+                      .includes(lowercaseTerm);
 
                     // 태그에서 검색 (한글명으로 매핑하여 검색)
                     const tagMatch = c.tags.some((tagId) => {
                       // 태그 ID에 직접 검색어가 포함되는지 확인
-                      const directMatch = tagId.toLowerCase().includes(term);
+                      const directMatch = tagId
+                        .toLowerCase()
+                        .includes(lowercaseTerm);
 
                       // 태그 ID에 해당하는 한글명에서 검색어가 포함되는지 확인
                       const tagInfo = TAG_INFO.find((t) => t.id === tagId);
                       const koreanLabelMatch = tagInfo
-                        ? tagInfo.label.toLowerCase().includes(term)
+                        ? tagInfo.label.toLowerCase().includes(lowercaseTerm)
                         : false;
 
                       return directMatch || koreanLabelMatch;
@@ -1023,12 +976,35 @@ const TeacherConsultationPage: React.FC = () => {
                     return contentMatch || planMatch || tagMatch;
                   });
 
-                  // 검색 결과를 consultations에 저장하여 화면에 반영
-                  setConsultations(filtered);
-                  setShowAllRecords(true); // 검색 결과는 모두 표시
+                  // 검색 결과 표시 (전체 결과 표시)
+                  setDisplayedConsultations(filtered);
+                }}
+                style={{
+                  width: "100%",
+                  padding: "0.75rem 1rem",
+                  borderRadius: "8px",
+                  fontSize: "0.95rem",
+                }}
+              />
+            </FilterGroup>
+            <FilterGroup>
+              <SearchButton
+                onClick={() => {
+                  // 검색어가 없으면 전체 기록 로드
+                  if (!searchTerm.trim()) {
+                    loadConsultations();
+                    return;
+                  }
+
+                  // 검색 버튼은 이제 필터 초기화 용도로도 사용
+                  // 현재 표시된 결과를 유지하고 검색 설정만 초기화
+                  setSearchTerm("");
+                  setDisplayedConsultations(
+                    consultations.slice(0, displayCount)
+                  );
                 }}
               >
-                검색하기
+                필터 초기화
               </SearchButton>
             </FilterGroup>
           </FilterContainer>
@@ -1412,210 +1388,239 @@ const TeacherConsultationPage: React.FC = () => {
                   {error}
                 </div>
               ) : consultations.length > 0 ? (
-                <ConsultationGrid>
-                  {consultations.map((consultation) => {
-                    // 상담 날짜 포맷팅
-                    const consultDate = new Date(consultation.createdAt);
-                    const formattedDate = consultDate.toLocaleDateString(
-                      "ko-KR",
-                      {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      }
-                    );
-                    const formattedTime = consultDate.toLocaleTimeString(
-                      "ko-KR",
-                      {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }
-                    );
+                <>
+                  <ConsultationGrid>
+                    {displayedConsultations.map((consultation) => {
+                      // 상담 날짜 포맷팅
+                      const consultDate = new Date(consultation.createdAt);
+                      const formattedDate = consultDate.toLocaleDateString(
+                        "ko-KR",
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        }
+                      );
+                      const formattedTime = consultDate.toLocaleTimeString(
+                        "ko-KR",
+                        {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      );
 
-                    // 현재 태그 정보에서 해당 태그 찾기
-                    const findTagInfo = (tagId) =>
-                      TAG_INFO.find((t) => t.id === tagId) || {
-                        color: "#999",
-                        bgColor: "#f5f5f5",
-                        label: tagId,
-                        iconEmoji: "",
-                      };
+                      // 현재 태그 정보에서 해당 태그 찾기
+                      const findTagInfo = (tagId) =>
+                        TAG_INFO.find((t) => t.id === tagId) || {
+                          color: "#999",
+                          bgColor: "#f5f5f5",
+                          label: tagId,
+                          iconEmoji: "",
+                        };
 
-                    return (
-                      <div
-                        key={consultation.id}
-                        style={{
-                          backgroundColor: "white",
-                          borderRadius: "12px",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                          overflow: "hidden",
-                          border: "1px solid #eaeaea",
-                          marginBottom: "1.5rem",
-                        }}
-                      >
+                      return (
                         <div
+                          key={consultation.id}
                           style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            padding: "1rem",
-                            borderBottom: "1px solid #f0f0f0",
-                            backgroundColor: "#fafafa",
+                            backgroundColor: "white",
+                            borderRadius: "12px",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                            overflow: "hidden",
+                            border: "1px solid #eaeaea",
+                            marginBottom: "1.5rem",
                           }}
                         >
                           <div
-                            style={{ display: "flex", alignItems: "center" }}
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              padding: "1rem",
+                              borderBottom: "1px solid #f0f0f0",
+                              backgroundColor: "#fafafa",
+                            }}
+                          >
+                            <div
+                              style={{ display: "flex", alignItems: "center" }}
+                            >
+                              <div
+                                style={{
+                                  width: "40px",
+                                  height: "40px",
+                                  borderRadius: "50%",
+                                  backgroundColor: colors.primary.main,
+                                  color: "white",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontWeight: "bold",
+                                  marginRight: "1rem",
+                                  fontSize: "1.2rem",
+                                }}
+                              >
+                                {consultation.teacherName
+                                  ? consultation.teacherName[0]
+                                  : "?"}
+                              </div>
+                              <div>
+                                <div
+                                  style={{
+                                    fontWeight: "bold",
+                                    fontSize: "1.1rem",
+                                  }}
+                                >
+                                  {consultation.teacherName}
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: "0.9rem",
+                                    color: colors.grey[600],
+                                  }}
+                                >
+                                  {formattedDate} {formattedTime}
+                                </div>
+                              </div>
+                            </div>
+                            <div style={{ display: "flex", gap: "0.5rem" }}>
+                              {consultation.tags.map((tagId) => {
+                                const tagInfo = findTagInfo(tagId);
+                                return (
+                                  <div
+                                    key={tagId}
+                                    style={{
+                                      backgroundColor: tagInfo.bgColor,
+                                      color: tagInfo.color,
+                                      padding: "0.4rem 0.75rem",
+                                      borderRadius: "20px",
+                                      fontSize: "0.8rem",
+                                      fontWeight: "500",
+                                      border: `1px solid ${tagInfo.color}`,
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "0.25rem",
+                                    }}
+                                  >
+                                    {tagInfo.iconEmoji && (
+                                      <span style={{ fontSize: "0.9rem" }}>
+                                        {tagInfo.iconEmoji}
+                                      </span>
+                                    )}
+                                    {tagInfo.label}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div
+                            style={{
+                              padding: "1.5rem",
+                              borderBottom: "1px solid #f0f0f0",
+                            }}
                           >
                             <div
                               style={{
-                                width: "40px",
-                                height: "40px",
-                                borderRadius: "50%",
-                                backgroundColor: colors.primary.main,
-                                color: "white",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontWeight: "bold",
-                                marginRight: "1rem",
-                                fontSize: "1.2rem",
+                                marginBottom: "0.5rem",
+                                fontWeight: "600",
+                                color: colors.grey[700],
                               }}
                             >
-                              {consultation.teacherName
-                                ? consultation.teacherName[0]
-                                : "?"}
+                              상담 내용
                             </div>
-                            <div>
-                              <div
-                                style={{
-                                  fontWeight: "bold",
-                                  fontSize: "1.1rem",
-                                }}
-                              >
-                                {consultation.teacherName}
-                              </div>
-                              <div
-                                style={{
-                                  fontSize: "0.9rem",
-                                  color: colors.grey[600],
-                                }}
-                              >
-                                {formattedDate} {formattedTime}
-                              </div>
+                            <div
+                              style={{
+                                whiteSpace: "pre-line",
+                                lineHeight: "1.6",
+                                color: colors.grey[900],
+                                backgroundColor: "#fafafa",
+                                padding: "1rem",
+                                borderRadius: "8px",
+                                border: "1px solid #f0f0f0",
+                              }}
+                            >
+                              {consultation.content}
                             </div>
                           </div>
-                          <div style={{ display: "flex", gap: "0.5rem" }}>
-                            {consultation.tags.map((tagId) => {
-                              const tagInfo = findTagInfo(tagId);
-                              return (
-                                <div
-                                  key={tagId}
-                                  style={{
-                                    backgroundColor: tagInfo.bgColor,
-                                    color: tagInfo.color,
-                                    padding: "0.4rem 0.75rem",
-                                    borderRadius: "20px",
-                                    fontSize: "0.8rem",
-                                    fontWeight: "500",
-                                    border: `1px solid ${tagInfo.color}`,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.25rem",
-                                  }}
-                                >
-                                  {tagInfo.iconEmoji && (
-                                    <span style={{ fontSize: "0.9rem" }}>
-                                      {tagInfo.iconEmoji}
-                                    </span>
-                                  )}
-                                  {tagInfo.label}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
 
-                        <div
+                          <div style={{ padding: "1.5rem" }}>
+                            <div
+                              style={{
+                                marginBottom: "0.5rem",
+                                fontWeight: "600",
+                                color: colors.primary.main,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.35rem",
+                              }}
+                            >
+                              <span style={{ fontSize: "1rem" }}>📋</span>
+                              다음 단계 / 후속 조치
+                            </div>
+                            <div
+                              style={{
+                                whiteSpace: "pre-line",
+                                lineHeight: "1.6",
+                                color: colors.grey[900],
+                                backgroundColor: "#f5f9ff",
+                                padding: "1rem",
+                                borderRadius: "8px",
+                                border: `1px solid ${colors.primary.light}`,
+                              }}
+                            >
+                              {consultation.nextPlan ||
+                                "특별한 후속 조치가 필요하지 않습니다."}
+                            </div>
+                          </div>
+
+                          {consultation.isSharedWithOtherTeachers && (
+                            <div
+                              style={{
+                                padding: "0.75rem",
+                                backgroundColor: "#f5f5f5",
+                                borderTop: "1px solid #eaeaea",
+                                fontSize: "0.9rem",
+                                color: colors.grey[600],
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.5rem",
+                              }}
+                            >
+                              <span style={{ fontSize: "1rem" }}>👥</span>이
+                              상담 기록은 다른 교사와 공유되고 있습니다
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </ConsultationGrid>
+
+                  {/* 더보기 버튼 */}
+                  {searchTerm.trim() === "" &&
+                    displayCount < consultations.length && (
+                      <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
+                        <SecondaryButton
+                          onClick={() => {
+                            // 더보기 버튼 클릭 시 표시 개수 2개 증가
+                            const newDisplayCount = displayCount + 2;
+                            setDisplayCount(newDisplayCount);
+                            setDisplayedConsultations(
+                              consultations.slice(0, newDisplayCount)
+                            );
+                          }}
                           style={{
-                            padding: "1.5rem",
-                            borderBottom: "1px solid #f0f0f0",
+                            padding: "0.75rem 2rem",
+                            fontSize: "0.95rem",
+                            backgroundColor: "#f5f5f5",
+                            borderRadius: "8px",
+                            boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
                           }}
                         >
-                          <div
-                            style={{
-                              marginBottom: "0.5rem",
-                              fontWeight: "600",
-                              color: colors.grey[700],
-                            }}
-                          >
-                            상담 내용
-                          </div>
-                          <div
-                            style={{
-                              whiteSpace: "pre-line",
-                              lineHeight: "1.6",
-                              color: colors.grey[900],
-                              backgroundColor: "#fafafa",
-                              padding: "1rem",
-                              borderRadius: "8px",
-                              border: "1px solid #f0f0f0",
-                            }}
-                          >
-                            {consultation.content}
-                          </div>
-                        </div>
-
-                        <div style={{ padding: "1.5rem" }}>
-                          <div
-                            style={{
-                              marginBottom: "0.5rem",
-                              fontWeight: "600",
-                              color: colors.primary.main,
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.35rem",
-                            }}
-                          >
-                            <span style={{ fontSize: "1rem" }}>📋</span>
-                            다음 단계 / 후속 조치
-                          </div>
-                          <div
-                            style={{
-                              whiteSpace: "pre-line",
-                              lineHeight: "1.6",
-                              color: colors.grey[900],
-                              backgroundColor: "#f5f9ff",
-                              padding: "1rem",
-                              borderRadius: "8px",
-                              border: `1px solid ${colors.primary.light}`,
-                            }}
-                          >
-                            {consultation.nextPlan ||
-                              "특별한 후속 조치가 필요하지 않습니다."}
-                          </div>
-                        </div>
-
-                        {consultation.isSharedWithOtherTeachers && (
-                          <div
-                            style={{
-                              padding: "0.75rem",
-                              backgroundColor: "#f5f5f5",
-                              borderTop: "1px solid #eaeaea",
-                              fontSize: "0.9rem",
-                              color: colors.grey[600],
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "0.5rem",
-                            }}
-                          >
-                            <span style={{ fontSize: "1rem" }}>👥</span>이 상담
-                            기록은 다른 교사와 공유되고 있습니다
-                          </div>
-                        )}
+                          상담내역 더보기 ({displayCount}/{consultations.length}
+                          )
+                        </SecondaryButton>
                       </div>
-                    );
-                  })}
-                </ConsultationGrid>
+                    )}
+                </>
               ) : (
                 <div
                   style={{

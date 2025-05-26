@@ -175,9 +175,6 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
               <Avatar icon={<UserOutlined />} />
               <StudentInfoContainer>
                 <StudentName>{student.name}</StudentName>
-                {student.studentNum && (
-                  <StudentClass>학번: {student.studentNum}</StudentClass>
-                )}
               </StudentInfoContainer>
             </StudentItem>
           ))
