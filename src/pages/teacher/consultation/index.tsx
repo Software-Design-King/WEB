@@ -617,7 +617,6 @@ const TeacherConsultationPage: React.FC = () => {
 
     setLoading(true);
     setError("");
-    setDisplayCount(2); // 새로운 학생 선택 시 표시 개수 초기화
 
     try {
       console.log(`상담 기록 로드 API 호출: 학생 ID=${selectedStudent}`);
@@ -650,7 +649,8 @@ const TeacherConsultationPage: React.FC = () => {
           ); // 최신순 정렬
 
         setConsultations(formattedCounsels);
-        // 처음에는 최대 2개만 표시
+        
+        // 현재 displayCount에 따라 상담 내역 표시 (더보기 상태 유지)
         setDisplayedConsultations(formattedCounsels.slice(0, displayCount));
       } else {
         // 응답은 성공했지만 데이터가 없는 경우
@@ -663,7 +663,7 @@ const TeacherConsultationPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedStudent, userInfo.userId, userInfo.name, displayCount]);
+  }, [selectedStudent, userInfo.userId, userInfo.name]); // displayCount 의존성 제거
 
   // 탭 전환 처리
   const handleTabChange = useCallback(
@@ -671,6 +671,7 @@ const TeacherConsultationPage: React.FC = () => {
       setActiveTab(tab);
       if (tab === "history" && selectedStudent) {
         // 상담 기록 탭으로 전환할 때 데이터 로드
+        setDisplayCount(2); // 탭 전환시 표시 개수 초기화
         loadConsultations();
       } else if (tab === "new") {
         setShowForm(true);
@@ -684,6 +685,7 @@ const TeacherConsultationPage: React.FC = () => {
     setSelectedStudent(studentId);
     setActiveTab("new");
     setShowForm(true);
+    setDisplayCount(2); // 학생 선택시 표시 개수 초기화
   };
 
   // 학생 선택 또는 탭 변경 시 상담 기록 로드
@@ -708,13 +710,12 @@ const TeacherConsultationPage: React.FC = () => {
         studentId: selectedStudent,
       }));
 
-      // 선택된 학생의 상담 기록 조회
-      const filteredConsultations = MOCK_CONSULTATIONS.filter(
-        (consultation) => consultation.studentId === selectedStudent
-      );
-      setStudentConsultations(filteredConsultations);
+      // 선택된 학생의 상담 기록을 로드
+      if (activeTab === 'history') {
+        loadConsultations();
+      }
     }
-  }, [selectedStudent]);
+  }, [selectedStudent, activeTab, loadConsultations]);
 
   // 폼 입력 처리
   const handleInputChange = (
