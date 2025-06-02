@@ -197,7 +197,7 @@ export const editStudentScore = async (
     // semester를 URL 파라미터가 아닌 요청 본문에 포함시킴
     const requestData = {
       semester: semester,
-      subjects: subjectsData
+      subjects: subjectsData,
     };
 
     const response = await axios.patch<RegisterScoreResponse>(
@@ -277,14 +277,38 @@ export interface EnrollStudentResponse {
  * @param students 등록할 학생 정보 배열
  */
 export const enrollStudents = async (
-  students: EnrollStudentRequest['students']
+  students: EnrollStudentRequest["students"]
 ): Promise<EnrollStudentResponse> => {
   const token = localStorage.getItem("token");
 
   try {
+    // Excel에서 날짜가 숫자 형식(예: 39948)으로 변환되는 문제 처리
+    const processedStudents = students.map(student => {
+      const updatedStudent = { ...student };
+      
+      // birthDate가 숫자 형식인지 확인
+      if (updatedStudent.birthDate && !isNaN(Number(updatedStudent.birthDate))) {
+        // Excel 날짜를 YYYY-MM-DD 형식으로 변환
+        // Excel 날짜는 1900년 1월 1일부터의 일수 (1900-01-01 = 1)
+        try {
+          const excelDate = Number(updatedStudent.birthDate);
+          const date = new Date(Math.floor((excelDate - 25569) * 86400 * 1000));
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          updatedStudent.birthDate = `${year}-${month}-${day}`;
+        } catch (e) {
+          console.error('날짜 변환 오류:', e);
+          // 변환 실패 시 원래 값 유지
+        }
+      }
+      
+      return updatedStudent;
+    });
+
     const response = await axios.post(
-      `${BASE_URL}/student/enroll`,
-      { students },
+      `${BASE_URL}/teacher/enroll/students`,
+      { students: processedStudents },
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -296,7 +320,7 @@ export const enrollStudents = async (
     return response.data;
   } catch (error) {
     console.error("학생 등록 오류:", error);
-    
+
     // 기본 에러 응답 반환
     return {
       code: 50000,
@@ -356,7 +380,7 @@ export const updateStudentInfo = async (
     return response.data;
   } catch (error) {
     console.error("학생 정보 수정 오류:", error);
-    
+
     // 기본 에러 응답 반환
     return {
       code: 50000,
