@@ -17,6 +17,9 @@ const StudentDashboard = lazy(() => import("./pages/student/dashboard"));
 const TeacherDashboard = lazy(() => import("./pages/teacher/dashboard"));
 const KakaoCallbackPage = lazy(() => import("./pages/auth/kakao-callback"));
 const ClassroomStudents = lazy(() => import("./pages/teacher/students"));
+// 테스트 모달 페이지
+const TestModalPage = lazy(() => import("./test-modal"));
+const TestSignupModalPage = lazy(() => import("./pages/test-signup-modal"));
 
 // 새로 추가된 페이지 컴포넌트
 const StudentGradesPage = lazy(() => import("./pages/student/grades"));
@@ -209,6 +212,8 @@ function AppRoutes() {
       {/* 인증이 필요하지 않은 경로 */}
       <Route path="/" element={<LoginPageWrapper />} />
       <Route path="/auth/kakao/callback" element={<KakaoCallbackPage />} />
+      <Route path="/test-modal" element={<TestModalPage />} />
+      <Route path="/test-signup" element={<TestSignupModalPage />} />
 
       {/* 홈 리다이렉트 */}
       <Route path="/home" element={<HomeRedirect />} />

@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { Button, Container, Typography, Box } from "@mui/material";
-import SignupModal from "./components/auth/SignupModal";
+import SignupModal from "../components/auth/SignupModal";
 
-const TestModal: React.FC = () => {
+// 순수하게 모달만 테스트하기 위한 페이지
+const TestSignupModal: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   // 더미 카카오 토큰 (테스트용)
@@ -23,24 +24,25 @@ const TestModal: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="sm" sx={{ mt: 5 }}>
       <Box sx={{ my: 4, textAlign: "center" }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          회원가입 모달 테스트 페이지
+          회원가입 모달 테스트
         </Typography>
-        <Typography variant="body1" paragraph>
-          이 페이지는 회원가입 모달을 독립적으로 테스트하기 위한 페이지입니다.
+        <Typography variant="body1" sx={{ mb: 3 }}>
+          아래 버튼을 클릭하면 회원가입 모달이 표시됩니다.
         </Typography>
         <Button
           variant="contained"
           color="primary"
           onClick={handleOpen}
-          sx={{ mt: 2 }}
+          size="large"
         >
           회원가입 모달 열기
         </Button>
       </Box>
 
+      {/* 모달 컴포넌트 */}
       {isOpen && (
         <SignupModal
           isOpen={isOpen}
@@ -53,4 +55,4 @@ const TestModal: React.FC = () => {
   );
 };
 
-export default TestModal;
+export default TestSignupModal;

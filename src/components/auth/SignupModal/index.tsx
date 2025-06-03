@@ -374,6 +374,7 @@ interface FormState {
   address: string;
   contact: string;
   parentContact: string;
+  enrollCode: string; // Added for student enrollment code
 }
 
 enum Step {
@@ -391,15 +392,16 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, kakaoToken }
     userName: '',
     childName: '',
     userType: 'STUDENT',
-    grade: '1',
-    classNum: '1',
-    number: '',
-    age: '',
-    gender: 'MALE',
-    birthDate: '',
-    address: '',
-    contact: '',
-    parentContact: ''
+    grade: '1', // Default, will be nulled for student submission
+    classNum: '1', // Default, will be nulled for student submission
+    number: '', // Default, will be nulled for student submission
+    age: '', // Default, will be nulled for student submission
+    gender: 'MALE', // Default, will be nulled for student submission
+    birthDate: '', // Default, will be nulled for student submission
+    address: '', // Default, will be nulled for student submission
+    contact: '', // Default, will be nulled for student submission
+    parentContact: '', // Default, will be nulled for student submission
+    enrollCode: '' // Added for student enrollment code
   });
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -421,52 +423,49 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, kakaoToken }
     setError(null);
 
     try {
-      // 사용자 타입에 따라 필요한 데이터만 추출
-      const signupData: SignupData = {
-        userType: formData.userType,
-        grade: parseInt(formData.grade),
-        classNum: parseInt(formData.classNum),
-      };
-      
-      if (formData.userType === 'PARENT') {
-        // 학부모인 경우 childName 필수
-        signupData.userName = formData.userName;
-        signupData.childName = formData.childName;
-        signupData.number = parseInt(formData.number);
-      } else {
-        // 학생/교사인 경우
-        signupData.userName = formData.userName;
-        if (formData.number) {
-          signupData.number = parseInt(formData.number);
-        }
-        
-        // 추가 필드 (학생/교사만)
-        if (formData.birthDate) {
-          signupData.birthDate = formData.birthDate;
-        }
-        if (formData.gender) {
-          signupData.gender = formData.gender;
-        }
-        if (formData.contact) {
-          signupData.contact = formData.contact;
-        }
-        
-        // 학생만 필요한 필드
-        if (formData.userType === 'STUDENT') {
-          if (formData.age) {
-            signupData.age = parseInt(formData.age);
-          }
-          if (formData.address) {
-            signupData.address = formData.address;
-          }
-          if (formData.parentContact) {
-            signupData.parentContact = formData.parentContact;
-          }
-        }
+      let apiPayload: SignupData;
+
+      if (formData.userType === 'STUDENT') {
+        apiPayload = {
+          userType: 'STUDENT',
+          userName: formData.userName,
+          enrollCode: formData.enrollCode,
+          grade: null as any, // Send null for student
+          classNum: null as any, // Send null for student
+          number: null as any, // Send null for student
+          age: null as any, // Send null for student
+          gender: null as any, // Send null for student
+          birthDate: null as any, // Send null for student
+          address: null as any, // Send null for student
+          contact: null as any, // Send null for student
+          parentContact: null as any, // Send null for student
+        };
+      } else if (formData.userType === 'TEACHER') {
+        apiPayload = {
+          userType: 'TEACHER',
+          userName: formData.userName,
+          grade: parseInt(formData.grade), // Teachers might have these
+          classNum: parseInt(formData.classNum),
+          number: formData.number ? parseInt(formData.number) : undefined,
+          gender: formData.gender as 'MALE' | 'FEMALE',
+          birthDate: formData.birthDate || undefined,
+          contact: formData.contact || undefined,
+          // subject: formData.subject || undefined, // Example if teacher has subject
+        };
+      } else { // PARENT
+        apiPayload = {
+          userType: 'PARENT',
+          userName: formData.userName, // Parent's name
+          childName: formData.childName,
+          grade: parseInt(formData.grade), // Child's grade
+          classNum: parseInt(formData.classNum), // Child's class
+          number: parseInt(formData.number), // Child's number
+          contact: formData.contact || undefined, // Parent's contact
+        };
       }
 
       // 회원가입 API 호출
-      const response = await signup(signupData, kakaoToken);
+      const response = await signup(apiPayload, kakaoToken);
       
       if (response.success && response.token && response.userInfo) {
         // 성공적인 회원가입 후 로그인 처리
@@ -523,8 +522,13 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, kakaoToken }
           setError('학년과 반을 선택해주세요.');
           return false;
         }
-        if ((formData.userType === 'STUDENT' || formData.userType === 'PARENT') && !formData.number) {
-          setError('번호를 입력해주세요.');
+        if (formData.userType === 'PARENT' && !formData.number) {
+          setError('자녀의 번호를 입력해주세요.');
+          return false;
+        }
+        // For students, number is no longer a required input in the form
+        if (formData.userType === 'STUDENT' && !formData.enrollCode) {
+          setError('가입 코드를 입력해주세요.');
           return false;
         }
         return true;
@@ -646,200 +650,131 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, kakaoToken }
         {currentStep === Step.BasicInfo && (
           <FormSection>
             <SectionTitle>{getSectionTitle()}</SectionTitle>
-            
-            {formData.userType === 'PARENT' ? (
-              // 학부모 전용 필드
+            {/* 학생: 이름+가입코드만 입력 */}
+            {formData.userType === 'STUDENT' && (
+              <>
+                <FormGroup>
+                  <Label htmlFor="userName">이름<RequiredMark>*</RequiredMark></Label>
+                  <Input type="text" id="userName" name="userName" value={formData.userName} onChange={handleChange} placeholder="이름을 입력하세요" required />
+                </FormGroup>
+                <FormGroup>
+                  <Label htmlFor="enrollCode">가입 코드<RequiredMark>*</RequiredMark></Label>
+                  <Input type="text" id="enrollCode" name="enrollCode" value={formData.enrollCode} onChange={handleChange} placeholder="선생님께 받은 가입 코드를 입력하세요" required />
+                </FormGroup>
+                <InputNote>학년, 반, 번호 등은 입력하지 않아도 됩니다.</InputNote>
+              </>
+            )}
+            {/* 교사: 기존 필드 유지 */}
+            {formData.userType === 'TEACHER' && (
+              <>
+                <FormGroup>
+                  <Label htmlFor="userName">이름<RequiredMark>*</RequiredMark></Label>
+                  <Input type="text" id="userName" name="userName" value={formData.userName} onChange={handleChange} placeholder="교사 이름을 입력하세요" required />
+                </FormGroup>
+                <FieldWrapper>
+                  <FormGroup>
+                    <Label htmlFor="grade">담당 학년<RequiredMark>*</RequiredMark></Label>
+                    <Select id="grade" name="grade" value={formData.grade} onChange={handleChange} required>
+                      <option value="" disabled>학년 선택</option>
+                      {[1, 2, 3, 4, 5, 6].map(num => (<option key={num} value={num}>{num}학년</option>))}
+                    </Select>
+                  </FormGroup>
+                  <FormGroup>
+                    <Label htmlFor="classNum">담당 반<RequiredMark>*</RequiredMark></Label>
+                    <Select id="classNum" name="classNum" value={formData.classNum} onChange={handleChange} required>
+                      <option value="" disabled>반 선택</option>
+                      {[...Array(10)].map((_, i) => (<option key={i + 1} value={i + 1}>{i + 1}반</option>))}
+                    </Select>
+                  </FormGroup>
+                </FieldWrapper>
+                <FormGroup>
+                  <Label htmlFor="number">교번 (선택)</Label>
+                  <Input type="number" id="number" name="number" value={formData.number} onChange={handleChange} placeholder="교번을 입력하세요 (선택 사항)" min="1" />
+                </FormGroup>
+              </>
+            )}
+            {/* 학부모: 기존 필드 유지 */}
+            {formData.userType === 'PARENT' && (
               <>
                 <FormGroup>
                   <Label htmlFor="userName">학부모 이름<RequiredMark>*</RequiredMark></Label>
-                  <Input
-                    type="text"
-                    id="userName"
-                    name="userName"
-                    value={formData.userName}
-                    onChange={handleChange}
-                    placeholder="학부모 이름을 입력하세요"
-                    required
-                  />
+                  <Input type="text" id="userName" name="userName" value={formData.userName} onChange={handleChange} placeholder="학부모님의 이름을 입력하세요" required />
                 </FormGroup>
-
                 <FormGroup>
                   <Label htmlFor="childName">자녀 이름<RequiredMark>*</RequiredMark></Label>
-                  <Input
-                    type="text"
-                    id="childName"
-                    name="childName"
-                    value={formData.childName}
-                    placeholder="자녀 이름을 입력하세요"
-                    onChange={handleChange}
-                    required
-                  />
+                  <Input type="text" id="childName" name="childName" value={formData.childName} onChange={handleChange} placeholder="자녀의 이름을 입력하세요" required />
+                </FormGroup>
+                <FieldWrapper>
+                  <FormGroup>
+                    <Label htmlFor="grade">자녀 학년<RequiredMark>*</RequiredMark></Label>
+                    <Select id="grade" name="grade" value={formData.grade} onChange={handleChange} required>
+                      <option value="" disabled>학년 선택</option>
+                      {[1, 2, 3, 4, 5, 6].map(num => (<option key={num} value={num}>{num}학년</option>))}
+                    </Select>
+                  </FormGroup>
+                  <FormGroup>
+                    <Label htmlFor="classNum">자녀 반<RequiredMark>*</RequiredMark></Label>
+                    <Select id="classNum" name="classNum" value={formData.classNum} onChange={handleChange} required>
+                      <option value="" disabled>반 선택</option>
+                      {[...Array(10)].map((_, i) => (<option key={i + 1} value={i + 1}>{i + 1}반</option>))}
+                    </Select>
+                  </FormGroup>
+                </FieldWrapper>
+                <FormGroup>
+                  <Label htmlFor="number">자녀 번호<RequiredMark>*</RequiredMark></Label>
+                  <Input type="number" id="number" name="number" value={formData.number} onChange={handleChange} placeholder="자녀의 번호를 입력하세요 (예: 7)" required min="1" max="50" />
                 </FormGroup>
               </>
-            ) : (
-              // 학생/교사 공통 필드
-              <FormGroup>
-                <Label htmlFor="userName">이름<RequiredMark>*</RequiredMark></Label>
-                <Input
-                  type="text"
-                  id="userName"
-                  name="userName"
-                  value={formData.userName}
-                  placeholder={formData.userType === 'STUDENT' ? "학생 이름을 입력하세요" : "교사 이름을 입력하세요"}
-                  onChange={handleChange}
-                  required
-                />
-              </FormGroup>
             )}
-
-            <FieldWrapper>
-              <FormGroup>
-                <Label htmlFor="grade">학년<RequiredMark>*</RequiredMark></Label>
-                <Select
-                  id="grade"
-                  name="grade"
-                  value={formData.grade}
-                  onChange={handleChange}
-                  required
-                >
-                  {[1, 2, 3, 4, 5, 6].map(num => (
-                    <option key={num} value={num}>{num}학년</option>
-                  ))}
-                </Select>
-              </FormGroup>
-
-              <FormGroup>
-                <Label htmlFor="classNum">반<RequiredMark>*</RequiredMark></Label>
-                <Select
-                  id="classNum"
-                  name="classNum"
-                  value={formData.classNum}
-                  onChange={handleChange}
-                  required
-                >
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                    <option key={num} value={num}>{num}반</option>
-                  ))}
-                </Select>
-              </FormGroup>
-
-              <FormGroup>
-                <Label htmlFor="number">
-                  번호
-                  {formData.userType === 'STUDENT' || formData.userType === 'PARENT' ? <RequiredMark>*</RequiredMark> : null}
-                  {formData.userType === 'TEACHER' && ' (선택)'}
-                </Label>
-                <Input
-                  type="number"
-                  id="number"
-                  name="number"
-                  value={formData.number}
-                  placeholder="번호 입력"
-                  onChange={handleChange}
-                  min="1"
-                  max="50"
-                  required={formData.userType === 'STUDENT' || formData.userType === 'PARENT'}
-                />
-              </FormGroup>
-            </FieldWrapper>
           </FormSection>
         )}
 
-        {currentStep === Step.AdditionalInfo && formData.userType !== 'PARENT' && (
+        {currentStep === Step.AdditionalInfo && (
           <FormSection>
-            <SectionTitle>
-              {formData.userType === 'STUDENT' ? '학생 개인 정보' : '교사 개인 정보'}
-            </SectionTitle>
-            
-            <FieldWrapper>
-              <FormGroup>
-                <Label htmlFor="gender">성별<RequiredMark>*</RequiredMark></Label>
-                <Select
-                  id="gender"
-                  name="gender"
-                  value={formData.gender}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="MALE">남성</option>
-                  <option value="FEMALE">여성</option>
-                </Select>
-              </FormGroup>
-
-              <FormGroup>
-                <Label htmlFor="birthDate">생년월일<RequiredMark>*</RequiredMark></Label>
-                <DateInput
-                  type="date"
-                  id="birthDate"
-                  name="birthDate"
-                  value={formData.birthDate}
-                  onChange={handleChange}
-                  required
-                />
-              </FormGroup>
-            </FieldWrapper>
-
-            <FormGroup>
-              <Label htmlFor="contact">연락처<RequiredMark>*</RequiredMark></Label>
-              <Input
-                type="tel"
-                id="contact"
-                name="contact"
-                placeholder="000-0000-0000"
-                value={formData.contact}
-                onChange={handleChange}
-                required
-              />
-              <InputNote>하이픈(-) 포함하여 입력해주세요</InputNote>
-            </FormGroup>
+            {/* 학생은 입력 없이 안내 메시지 */}
+            {formData.userType === 'STUDENT' && (
+              <>
+                <SectionTitle>추가 정보</SectionTitle>
+                <InputNote>학생은 추가로 입력할 정보가 없습니다. '다음'을 눌러주세요.</InputNote>
+              </>
+            )}
+            {/* 교사 기존 필드 유지 */}
+            {formData.userType === 'TEACHER' && (
+              <>
+                <SectionTitle>교사 개인 정보</SectionTitle>
+                <FieldWrapper>
+                  <FormGroup>
+                    <Label htmlFor="gender">성별<RequiredMark>*</RequiredMark></Label>
+                    <Select id="gender" name="gender" value={formData.gender} onChange={handleChange} required>
+                      <option value="MALE">남성</option>
+                      <option value="FEMALE">여성</option>
+                    </Select>
+                  </FormGroup>
+                  <FormGroup>
+                    <Label htmlFor="birthDate">생년월일<RequiredMark>*</RequiredMark></Label>
+                    <DateInput type="date" id="birthDate" name="birthDate" value={formData.birthDate} onChange={handleChange} required />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label htmlFor="contact">연락처<RequiredMark>*</RequiredMark></Label>
+                    <Input type="tel" id="contact" name="contact" value={formData.contact} onChange={handleChange} placeholder="010-1234-5678" required />
+                  </FormGroup>
+                </FieldWrapper>
+              </>
+            )}
+            {/* 학부모는 추가 정보 없음 안내 */}
+            {formData.userType === 'PARENT' && (
+              <>
+                <SectionTitle>추가 정보</SectionTitle>
+                <InputNote>학부모는 추가로 입력할 정보가 없습니다. '다음' 또는 '제출'을 눌러주세요.</InputNote>
+              </>
+            )}
           </FormSection>
         )}
 
         {currentStep === Step.StudentDetails && formData.userType === 'STUDENT' && (
           <FormSection>
-            <SectionTitle>학생 추가 정보</SectionTitle>
-            
-            <FormGroup>
-              <Label htmlFor="age">나이<RequiredMark>*</RequiredMark></Label>
-              <Input
-                type="number"
-                id="age"
-                name="age"
-                min="6"
-                max="20"
-                placeholder="나이 입력"
-                value={formData.age}
-                onChange={handleChange}
-                required
-              />
-            </FormGroup>
-
-            <FormGroup>
-              <Label htmlFor="address">주소<RequiredMark>*</RequiredMark></Label>
-              <Input
-                type="text"
-                id="address"
-                name="address"
-                placeholder="주소를 입력하세요"
-                value={formData.address}
-                onChange={handleChange}
-                required
-              />
-            </FormGroup>
-
-            <FormGroup>
-              <Label htmlFor="parentContact">학부모 연락처<RequiredMark>*</RequiredMark></Label>
-              <Input
-                type="tel"
-                id="parentContact"
-                name="parentContact"
-                placeholder="000-0000-0000"
-                value={formData.parentContact}
-                onChange={handleChange}
-                required
-              />
-              <InputNote>비상 연락처로 사용됩니다</InputNote>
-            </FormGroup>
+            <SectionTitle>학생 세부 정보</SectionTitle>
+            <p>학생 세부 정보 입력 단계입니다. 현재 학생의 경우 이 단계에서 입력할 내용이 없습니다. '제출'을 눌러 가입을 완료해주세요.</p>
           </FormSection>
         )}
 
