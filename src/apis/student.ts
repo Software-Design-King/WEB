@@ -435,7 +435,9 @@ export const getStudentReport = async (studentId: number): Promise<any> => {
       }
     );
 
-    return response.data;
+    // API 응답 구조에서 data 객체 내부에 우리가 필요한 데이터가 있으므로 data.data를 반환
+    console.log('불러온 원래 데이터:', response.data);
+    return response.data.data; // 내부 data 객체만 반환
   } catch (error) {
     console.error("학생 보고서 데이터 조회 오류:", error);
     throw new Error("보고서 데이터를 불러오는데 실패했습니다.");
