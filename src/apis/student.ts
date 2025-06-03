@@ -303,7 +303,7 @@ export const enrollStudents = async (
     });
 
     const response = await axios.post<EnrollStudentResponse>(
-      `${BASE_URL}/students/enroll`,
+      `${BASE_URL}/teacher/enroll/students`,
       {
         students: processedStudents,
       },
