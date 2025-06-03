@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "@emotion/styled";
 import DashboardLayout from "../../../components/layout/DashboardLayout";
 import StudentSidebar from "../../../components/layout/StudentSidebar";
@@ -10,138 +10,43 @@ import {
 } from "../../../components/dashboard/DashboardComponents.styles";
 import { colors } from "../../../components/common/Common.styles";
 import { useUserStore } from "../../../stores/userStore";
+import { getStudentDetail, StudentDetailResponse } from "../../../apis/student";
+import { getStudentAttendance, AttendanceResponse } from "../../../apis/attendance";
 
-// 임시 유저 데이터
-const userData = {
-  name: "권도훈",
-  role: "학생",
-  grade: 2,
-  class: 3,
-  number: 12,
-};
 
-// 학생부 카테고리
+// 학생부 카테고리 (출결 현황과 기본 정보만 실제 API 데이터로 표시)
 const recordCategories = [
   { id: 1, name: "기본 정보" },
   { id: 2, name: "출결 현황" },
-  { id: 3, name: "행동 발달" },
-  { id: 4, name: "특기 사항" },
-  { id: 5, name: "활동 내역" },
+  // 아래 항목들은 현재 API가 없어 나중에 구현
+  // { id: 3, name: "행동 발달" },
+  // { id: 4, name: "특기 사항" },
+  // { id: 5, name: "활동 내역" },
 ];
 
-// 학생 기본 정보
-const studentInfo = {
-  name: "권도훈",
-  birthDate: "2009-07-22",
-  gender: "남",
-  address: "서울시 강남구 역삼로 123",
-  contact: "010-1234-5678",
-  parentName: "권영수",
-  parentContact: "010-9876-5432",
-  admissionDate: "2023-03-02",
-  schoolName: "소프트웨어디자인고등학교",
-  grade: 2,
-  class: 3,
-  studentNumber: 12,
-};
+// 로딩 상태 및 에러 메시지 컴포넌트
+const LoadingMessage = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 2rem;
+  font-size: 1rem;
+  color: ${colors.text.secondary};
+`;
 
-// 출결 현황
-const attendanceRecord = {
-  year: "2024",
-  semester: "1학기",
-  attendanceDays: 97,
-  absenceDays: 0,
-  lateDays: 2,
-  earlyLeaveDays: 1,
-  sickLeaveDays: 0,
-  details: [
-    { date: "2024-04-05", type: "late", reason: "교통 지연", description: "교통 지연으로 인한 지각" },
-    { date: "2024-05-12", type: "late", reason: "늦잠", description: "늦잠으로 인한 지각" },
-    { date: "2024-05-20", type: "earlyLeave", reason: "병원 방문", description: "병원 방문으로 인한 조퇴" },
-  ],
-};
-
-// 행동 발달 기록
-const behavioralRecord = [
-  {
-    date: "2024-04-15",
-    category: "리더십",
-    description: "그룹 프로젝트에서 리더십을 발휘하여 팀원들을 잘 이끌었습니다.",
-    teacher: "박지성",
-  },
-  {
-    date: "2024-05-10",
-    category: "창의적 사고",
-    description: "문제 해결 능력이 뛰어나며 창의적인 아이디어를 많이 제시합니다.",
-    teacher: "김승환",
-  },
-  {
-    date: "2024-06-02",
-    category: "분석적 사고",
-    description: "컴퓨터 과학 관련 창의적 사고와 분석적 사고 능력이 뛰어납니다.",
-    teacher: "이미란",
-  },
-];
-
-// 특기 사항
-const specialNotes = [
-  {
-    date: "2024-03-15",
-    category: "진로 희망",
-    description: "소프트웨어 개발자(인공지능 분야)",
-    teacher: "김승환",
-  },
-  {
-    date: "2024-04-20",
-    category: "교과 특기",
-    description: "수학과 과학 분야에 특별한 재능을 보임. 특히 알고리즘 문제 해결 능력이 뛰어남.",
-    teacher: "박지성",
-  },
-  {
-    date: "2024-05-17",
-    category: "수상 경력",
-    description: "2024년 전국 청소년 코딩 대회 우수상 수상",
-    teacher: "이미란",
-  },
-  {
-    date: "2024-06-10",
-    category: "자격증",
-    description: "정보처리기능사 취득",
-    teacher: "김승환",
-  },
-];
-
-// 활동 내역
-const activityRecord = [
-  {
-    date: "2024-03-15",
-    category: "동아리",
-    title: "소프트웨어 동아리 'Code Masters'",
-    description: "학교 소프트웨어 개발 동아리에서 웹 개발 팀장으로 활동 중.",
-    teacher: "박지성",
-  },
-  {
-    date: "2024-05-17",
-    category: "대회",
-    title: "전국 고교 프로그래밍 경진대회",
-    description: "알고리즘 문제 해결 및 창의적 소프트웨어 설계 경진대회 참가",
-    teacher: "김승환",
-  },
-  {
-    date: "2024-07-15",
-    category: "직업 체험",
-    title: "IT 기업 인턴십 프로그램",
-    description: "여름방학 기간 동안 네이버 커넥트 인턴십 프로그램 참가 예정",
-    teacher: "이미란",
-  },
-  {
-    date: "2024-04-20",
-    category: "프로젝트",
-    title: "학교 홈페이지 리뉴얼 프로젝트",
-    description: "학교 공식 홈페이지 리뉴얼 작업에 UI/UX 디자인 및 프론트엔드 개발 참여",
-    teacher: "김승환",
-  },
-];
+const ErrorMessage = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 2rem;
+  font-size: 1rem;
+  color: ${colors.error.main};
+  background-color: ${colors.error.light};
+  border-radius: 8px;
+  margin: 1rem 0;
+`;
 
 // 스타일 컴포넌트
 const RecordsContainer = styled.div`

@@ -1,31 +1,103 @@
 import React, { useState, useEffect } from "react";
 import styled from "@emotion/styled";
-import { Radar } from "recharts";
-import {
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  ResponsiveContainer,
-} from "recharts";
 import DashboardLayout from "../../../components/layout/DashboardLayout";
 import StudentSidebar from "../../../components/layout/StudentSidebar";
 import {
-  DashboardGrid,
   DashboardCard,
   CardTitle,
   ContentContainer,
 } from "../../../components/dashboard/DashboardComponents.styles";
 import { colors } from "../../../components/common/Common.styles";
-import { getStudentScore, StudentScoreResponse, Subject } from "../../../apis/student";
+import { getStudentScore, StudentScoreResponse } from "../../../apis/student";
 import { useUserStore } from "../../../stores/userStore";
 
+// 페이지 컨테이너
+const PageContainer = styled.div`
+  padding: 1.5rem;
+  width: 100%;
+`;
+
+// 섹션 타이틀
+const StyledSubSectionTitle = styled.h2`
+  font-size: 1.2rem;
+  color: ${colors.text.primary};
+  margin: 1.5rem 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid ${colors.grey[300]};
+`;
+
+// 통계 아이템 컨테이너
+const StatItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  background: ${colors.grey[50]};
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  min-width: 120px;
+`;
+
+// 통계 라벨
+const StatLabel = styled.span`
+  font-size: 0.85rem;
+  color: ${colors.text.secondary};
+`;
+
+// 통계 값
+const StatValue = styled.span`
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: ${colors.text.primary};
+`;
+
+// 점수에 따른 색상 반환 함수
+const getScoreColor = (score: number | string) => {
+  if (score === "-") return "#999";
+
+  const numScore = typeof score === "string" ? parseFloat(score) : score;
+  if (isNaN(numScore)) return "#999";
+
+  if (numScore >= 90) return colors.success.main;
+  if (numScore >= 80) return colors.primary.main;
+  if (numScore >= 70) return colors.warning.main;
+  return colors.error.main;
+};
+
+// 성적 데이터 형식 타입
+type ScoresByGrade = Record<string, Record<string, SubjectScores[]>>;
+
+interface SubjectScores {
+  subject: string;
+  examType?: string;
+  score: number;
+  letterGrade: string;
+  grade: string;
+  semester: string;
+}
+
+interface TransformedScore {
+  grades: ScoresByGrade;
+}
+
+// 학생 성적 데이터 형식으로 변환하는 함수
+const transformScoreData = (scoreData: StudentScoreResponse | null): TransformedScore => {
+  if (!scoreData || !scoreData.data || !scoreData.data.scoresByGradeAndSemester) {
+    console.error("성적 데이터 형식이 올바르지 않습니다:", scoreData);
+    return { grades: {} };
+  }
+  
+  return { grades: scoreData.data.scoresByGradeAndSemester };
+};
+
 // 학기 옵션
-const semesterOptions = [
-  "2025-1학기",
-  "2024-2학기",
-  "2024-1학기",
-  "2023-2학기",
+// 초기 학기 옵션 (API 응답 후 가용 학기로 업데이트됨)
+const defaultSemesterOptions = [
+  "1-1학기",
+  "1-2학기",
+  "2-1학기",
+  "2-2학기",
+  "3-1학기",
+  "3-2학기",
 ];
 
 // 로딩 상태 컴포넌트
@@ -144,7 +216,8 @@ const ChartContainer = styled.div`
 // 성적관리 페이지
 const StudentGradesPage = () => {
   // 상태 관리
-  const [selectedSemester, setSelectedSemester] = useState(semesterOptions[0]);
+  const [semesterOptions, setSemesterOptions] = useState(defaultSemesterOptions);
+  const [selectedSemester, setSelectedSemester] = useState(defaultSemesterOptions[0]);
   const [isLoading, setIsLoading] = useState(false);
   const [scoreResponse, setScoreResponse] = useState<StudentScoreResponse | null>(null);
   const [gradesData, setGradesData] = useState<any[]>([]); // 현재 선택된 학기의 성적 데이터
@@ -168,10 +241,18 @@ const StudentGradesPage = () => {
       try {
         // 교사용과 동일한 API 사용: /score/{studentId}
         const response = await getStudentScore(Number(userInfo.userId));
+        console.log("API 응답 데이터:", response); // 디버깅용 로그
         setScoreResponse(response);
         
+        // 사용 가능한 학기 목록 업데이트
+        const availableSemesters = getAvailableSemesters(response);
+        if (availableSemesters.length > 0) {
+          setSemesterOptions(availableSemesters);
+          setSelectedSemester(availableSemesters[0]); // 첫 번째 사용 가능한 학기 선택
+        }
+        
         // 현재 선택된 학기에 맞는 데이터 추출
-        const currentSemesterData = extractCurrentSemesterData(response, selectedSemester);
+        const currentSemesterData = extractCurrentSemesterData(response, availableSemesters[0] || selectedSemester);
         setGradesData(currentSemesterData);
       } catch (err) {
         console.error("성적 정보 로드 오류:", err);
@@ -219,23 +300,56 @@ const StudentGradesPage = () => {
     return `${grade}학년 ${classNum}반 ${userInfo.number || ""}번`;
   };
   
+  // API 응답에서 사용 가능한 학기 목록 추출하는 함수
+  const getAvailableSemesters = (scoreData: StudentScoreResponse | null): string[] => {
+    if (!scoreData || !scoreData.data || !scoreData.data.scoresByGradeAndSemester) return [];
+    
+    const semesters: string[] = [];
+    const grades = Object.keys(scoreData.data.scoresByGradeAndSemester);
+    
+    grades.forEach(grade => {
+      const semestersInGrade = Object.keys(scoreData.data.scoresByGradeAndSemester[grade]);
+      semestersInGrade.forEach(semester => {
+        semesters.push(`${grade}-${semester}학기`);
+      });
+    });
+    
+    return semesters;
+  };
+
   // API 응답에서 현재 학기 성적 데이터 추출하는 함수
   const extractCurrentSemesterData = (scoreData: StudentScoreResponse | null, semester: string) => {
-    if (!scoreData || !scoreData.data) return [];
+    if (!scoreData || !scoreData.data || !scoreData.data.scoresByGradeAndSemester) {
+      console.log("유효한 성적 데이터가 없습니다.");
+      return [];
+    }
     
-    // 학기 문자열에서 학년과 학기 추출 (예: "2025-1학기" -> grade="2025", semesterNum="1")
+    // 학기 문자열에서 학년과 학기 추출 (예: "1-1학기" -> grade="1", semesterNum="1")
     const semesterMatch = semester.match(/(\d+)-(\d+)학기/);
-    if (!semesterMatch) return [];
+    if (!semesterMatch) {
+      console.log("학기 형식이 올바르지 않습니다.", semester);
+      return [];
+    }
     
     const grade = semesterMatch[1];
     const semesterNum = semesterMatch[2];
     
+    console.log(`추출 시도: 학년=${grade}, 학기=${semesterNum}`); // 디버깅용 로그
+    
     // API 응답 데이터에서 해당 학년/학기 데이터 추출
     const gradeData = scoreData.data.scoresByGradeAndSemester[grade];
-    if (!gradeData) return [];
+    if (!gradeData) {
+      console.log(`${grade}학년 데이터가 없습니다.`);
+      return [];
+    }
     
     const semesterData = gradeData[semesterNum];
-    if (!semesterData) return [];
+    if (!semesterData) {
+      console.log(`${grade}학년 ${semesterNum}학기 데이터가 없습니다.`);
+      return [];
+    }
+    
+    console.log("학기 데이터 찾음:", semesterData); // 디버깅용 로그
     
     // 과목별 성적을 GradeData 형태로 변환
     return semesterData.subjects.map((subject, index) => ({
@@ -269,97 +383,132 @@ const StudentGradesPage = () => {
       <StudentSidebar {...{ isCollapsed: false }} />
 
       <ContentContainer>
-        <GradesContainer>
-          <h1>성적 관리</h1>
+        <PageContainer>
+          <DashboardCard>
+            <CardTitle>내 성적 조회</CardTitle>
 
-          <SemesterSelector>
-            <SemesterLabel>학기 선택:</SemesterLabel>
-            <SemesterSelect
-              value={selectedSemester}
-              onChange={handleSemesterChange}
-            >
-              {semesterOptions.map((semester) => (
-                <option key={semester} value={semester}>
-                  {semester}
-                </option>
-              ))}
-            </SemesterSelect>
-          </SemesterSelector>
+            {isLoading ? (
+              <div style={{ display: "flex", justifyContent: "center", padding: "2rem" }}>
+                <LoadingContainer>성적 정보를 불러오는 중입니다...</LoadingContainer>
+              </div>
+            ) : error ? (
+              <div style={{ padding: "2rem", textAlign: "center", color: "red" }}>
+                {error}
+              </div>
+            ) : !scoreResponse ? (
+              <div style={{ padding: "2rem 0", textAlign: "center" }}>
+                성적 데이터가 없습니다.
+              </div>
+            ) : (
+              <div>
+                {/* 성적 요약 섹션 */}
+                <StyledSubSectionTitle>성적 요약</StyledSubSectionTitle>
 
-          <DashboardGrid>
-            <DashboardCard gridColumn="span 8">
-              <CardTitle>성적 목록</CardTitle>
-              {isLoading ? (
-                <LoadingContainer>
-                  성적 정보를 불러오는 중입니다...
-                </LoadingContainer>
-              ) : error ? (
-                <LoadingContainer>{error}</LoadingContainer>
-              ) : gradesData.length === 0 ? (
-                <LoadingContainer>
-                  이 학기의 성적 정보가 없습니다.
-                </LoadingContainer>
-              ) : (
-                <GradesTable>
-                  <Table>
-                    <TableHeader>
-                      <tr>
-                        <TableHeaderCell>과목</TableHeaderCell>
-                        <TableHeaderCell>점수</TableHeaderCell>
-                        <TableHeaderCell>등급</TableHeaderCell>
-                      </tr>
-                    </TableHeader>
-                    <TableBody>
-                      {gradesData.map((grade, index) => (
-                        <TableRow key={grade.id || index}>
-                          <TableCell>{grade.subject}</TableCell>
-                          <TableCell>{grade.score}</TableCell>
-                          <TableCell>
-                            <GradeIndicator grade={grade.grade}>
-                              {grade.grade}
-                            </GradeIndicator>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </GradesTable>
-              )}
-            </DashboardCard>
+                {/* 학년/학기별 요약 정보 */}
+                <div style={{ marginBottom: "2rem" }}>
+                  {Object.entries(transformScoreData(scoreResponse)).map(
+                    ([grade, semesters]) => {
+                      return Object.entries(semesters as any).map(
+                        ([semester, data]) => {
+                          return (
+                            <div
+                              key={`${grade}-${semester}`}
+                              style={{
+                                background: "white",
+                                padding: "1rem",
+                                borderRadius: "8px",
+                                marginBottom: "1rem",
+                                boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
+                              }}
+                            >
+                              <h3 style={{ margin: "0 0 1rem 0" }}>
+                                {`${grade}학년 ${semester}학기 성적`}
+                              </h3>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  gap: "2rem",
+                                  flexWrap: "wrap",
+                                }}
+                              >
+                                <StatItem>
+                                  <StatLabel>평균 점수</StatLabel>
+                                  <StatValue>
+                                    {(data as any).averageScore?.toFixed(1) || "0"}
+                                  </StatValue>
+                                </StatItem>
+                                <StatItem>
+                                  <StatLabel>반 석차</StatLabel>
+                                  <StatValue>{(data as any).classRank || "-"}등</StatValue>
+                                </StatItem>
+                                <StatItem>
+                                  <StatLabel>전체 석차</StatLabel>
+                                  <StatValue>{(data as any).wholeRank || "-"}등</StatValue>
+                                </StatItem>
+                                <StatItem>
+                                  <StatLabel>총점</StatLabel>
+                                  <StatValue>{(data as any).totalScore || "-"}점</StatValue>
+                                </StatItem>
+                              </div>
+                            </div>
+                          );
+                        }
+                      );
+                    }
+                  )}
+                </div>
 
-            <DashboardCard gridColumn="span 4">
-              <CardTitle>성적 분포도</CardTitle>
-              <ChartContainer>
-                {isLoading ? (
-                  <LoadingContainer>
-                    성적 정보를 불러오는 중입니다...
-                  </LoadingContainer>
-                ) : error ? (
-                  <LoadingContainer>{error}</LoadingContainer>
-                ) : gradesData.length === 0 ? (
-                  <LoadingContainer>
-                    이 학기의 성적 정보가 없습니다.
-                  </LoadingContainer>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart outerRadius="80%" data={radarData}>
-                      <PolarGrid />
-                      <PolarAngleAxis dataKey="subject" />
-                      <PolarRadiusAxis angle={30} domain={[0, 100]} />
-                      <Radar
-                        name="내 점수"
-                        dataKey="score"
-                        stroke={colors.primary.main}
-                        fill={colors.primary.main}
-                        fillOpacity={0.6}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
+                {/* 학기별/시험유형별 성적 테이블 */}
+                <StyledSubSectionTitle>학기별 시험 성적</StyledSubSectionTitle>
+                
+                {Object.entries(transformScoreData(scoreResponse)).map(
+                  ([grade, semesters]) => {
+                    return Object.entries(semesters as any).map(
+                      ([semester, data]) => {
+                        return (
+                          <div key={`table-${grade}-${semester}`} style={{ marginBottom: "2rem" }}>
+                            <h4 style={{ margin: "1rem 0" }}>{`${grade}학년 ${semester}학기`}</h4>
+                            <GradesTable>
+                              <Table>
+                                <TableHeader>
+                                  <tr>
+                                    <TableHeaderCell>과목</TableHeaderCell>
+                                    <TableHeaderCell>시험 유형</TableHeaderCell>
+                                    <TableHeaderCell>점수</TableHeaderCell>
+                                    <TableHeaderCell>등급</TableHeaderCell>
+                                  </tr>
+                                </TableHeader>
+                                <TableBody>
+                                  {(data as any).subjects.map((subject: any, idx: number) => (
+                                    <TableRow key={`${grade}-${semester}-${idx}`}>
+                                      <TableCell>{subject.name}</TableCell>
+                                      <TableCell>{subject.examType}</TableCell>
+                                      <TableCell style={{ 
+                                        color: getScoreColor(subject.score),
+                                        fontWeight: 'bold'
+                                      }}>
+                                        {subject.score}
+                                      </TableCell>
+                                      <TableCell>
+                                        <GradeIndicator grade={getLetterGrade(subject.score)}>
+                                          {getLetterGrade(subject.score)}
+                                        </GradeIndicator>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </GradesTable>
+                          </div>
+                        );
+                      }
+                    );
+                  }
                 )}
-              </ChartContainer>
-            </DashboardCard>
-          </DashboardGrid>
-        </GradesContainer>
+              </div>
+            )}
+          </DashboardCard>
+        </PageContainer>
       </ContentContainer>
     </DashboardLayout>
   );
