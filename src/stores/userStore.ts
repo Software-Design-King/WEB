@@ -14,18 +14,20 @@ export interface UserInfo {
 
 // API 응답에서 내부 UserInfo 형식으로 변환하는 함수
 const convertApiUserInfoToInternal = (apiUserInfo: ApiUserInfo): UserInfo => {
-  // 학년/반 정보를 roleInfo 문자열로 조합
-  const roleInfo =
-    apiUserInfo.grade && apiUserInfo.classNum
-      ? `${apiUserInfo.grade}학년 ${apiUserInfo.classNum}반 담임`
-      : (apiUserInfo.subject ? `${apiUserInfo.subject} 담당` : "");
+  // API 응답의 roleInfo를 직접 사용합니다.
+  // 사용자께서 제공해주신 API 예시에 따르면, API 응답에 roleInfo 필드가 포함되어 있습니다.
+  const directRoleInfo = apiUserInfo.roleInfo || "";
 
   return {
     name: apiUserInfo.name || "",
-    roleInfo: roleInfo,
-    number: apiUserInfo.number || null,
+    roleInfo: directRoleInfo, // API에서 직접 받은 roleInfo 사용
+    // API에서 받은 number 값을 사용합니다. 값이 없거나(undefined) null이면 null로 설정됩니다.
+    // 0과 같은 유효한 숫자 값은 그대로 유지됩니다.
+    number: apiUserInfo.number ?? null,
     userType: apiUserInfo.userType,
-    userId: apiUserInfo.userId || 0,
+    // API에서 받은 userId 값을 그대로 사용합니다. UserInfo 인터페이스에서 userId는 optional이므로 undefined도 가능합니다.
+    // 이전의 `|| 0` 로직은 userId가 0인 경우와 없는 경우를 구분할 수 없게 만들었습니다.
+    userId: apiUserInfo.userId,
   };
 };
 

@@ -12,6 +12,7 @@ export interface UserInfo {
   contact?: string;
   parentContact?: string;
   subject?: string; // 교사 담당 과목
+  roleInfo?: string; // 사용자 역할 정보 (예: "1학년 1반 담임", "수학 담당", "1학년 1반")
 }
 
 export interface UserResponse {
