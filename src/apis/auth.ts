@@ -147,6 +147,9 @@ export interface SignupData {
 
   // 교사 전용 필드
   subject?: string; // 담당 과목
+
+  // 학생 가입 시 선생님에게 받은 가입 코드
+  enrollCode?: string;
 }
 
 // 회원가입

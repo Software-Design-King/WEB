@@ -154,15 +154,25 @@ const SignupModal: React.FC<SignupModalProps> = ({
         // 학생 또는 교사
         endpoint = `${apiBaseUrl}/user/enroll/student-teacher`;
 
+        // 기본 필수 데이터
         requestData = {
           userName: data.name,
           userType: selectedRole,
-          kakaoToken: kakaoToken,
-          grade: data.grade ? parseInt(data.grade) : null,
-          classNum: data.class ? parseInt(data.class) : null,
-          number: data.number ? parseInt(data.number) : null,
-          enrollCode: data.enrollCode || null, // Include enrollCode in the request if provided
+          kakaoToken: kakaoToken
         };
+        
+        // 학생인 경우
+        if (selectedRole === "STUDENT") {
+          // enrollCode는 필수
+          if (data.enrollCode) {
+            (requestData as any).enrollCode = data.enrollCode;
+          }
+          
+          // 학생 정보는 기본적으로 null로 설정
+          (requestData as any).grade = null;
+          (requestData as any).classNum = null;
+          (requestData as any).number = null;
+        }
 
         // 선택적 필드 추가
         if (data.age) {
@@ -345,64 +355,13 @@ const SignupModal: React.FC<SignupModalProps> = ({
                 <FormLabel htmlFor="enrollCode">가입코드</FormLabel>
                 <FormInput
                   id="enrollCode"
-                  {...register("enrollCode")}
-                  placeholder="교사가 제공한 가입코드를 입력하세요 (선택사항)"
+                  {...register("enrollCode", { required: true })}
+                  placeholder="교사가 제공한 가입코드를 입력하세요"
                 />
+                {errors.enrollCode && <FormErrorText>가입코드를 입력해주세요.</FormErrorText>}
                 <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
                   * 가입코드를 입력하면 교사가 등록한 학생 정보와 연동됩니다.
                 </div>
-              </FormField>
-              <FormField>
-                <FormLabel htmlFor="grade">학년</FormLabel>
-                <FormSelect
-                  id="grade"
-                  {...register("grade", { required: true })}
-                  defaultValue="1"
-                >
-                  <option value="">학년</option>
-                  <option value="1">1학년</option>
-                  <option value="2">2학년</option>
-                  <option value="3">3학년</option>
-                </FormSelect>
-                {errors.grade && (
-                  <FormErrorText>학년을 선택해주세요.</FormErrorText>
-                )}
-              </FormField>
-              <FormField>
-                <FormLabel htmlFor="class">반</FormLabel>
-                <FormSelect
-                  id="class"
-                  {...register("class", { required: true })}
-                  defaultValue="1"
-                >
-                  <option value="">반</option>
-                  {[...Array(10)].map((_, index) => (
-                    <option key={index + 1} value={index + 1}>
-                      {index + 1}반
-                    </option>
-                  ))}
-                </FormSelect>
-                {errors.class && (
-                  <FormErrorText>반을 선택해주세요.</FormErrorText>
-                )}
-              </FormField>
-              <FormField>
-                <FormLabel htmlFor="number">번호</FormLabel>
-                <FormSelect
-                  id="number"
-                  {...register("number", { required: true })}
-                  defaultValue="1"
-                >
-                  <option value="">번호</option>
-                  {[...Array(30)].map((_, index) => (
-                    <option key={index + 1} value={index + 1}>
-                      {index + 1}번
-                    </option>
-                  ))}
-                </FormSelect>
-                {errors.number && (
-                  <FormErrorText>번호를 선택해주세요.</FormErrorText>
-                )}
               </FormField>
             </div>
           )}
