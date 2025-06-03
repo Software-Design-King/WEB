@@ -1,24 +1,56 @@
 import React, { useState, useEffect } from "react";
-import { useUserStore } from "../../../stores/userStore";
 import styled from "@emotion/styled";
 import { colors } from "../../../components/common/Common.styles";
 import DashboardLayout from "../../../components/layout/DashboardLayout";
 import StudentSidebar from "../../../components/layout/StudentSidebar";
+import { useAuthContext } from "../../../hooks/useAuthContext";
+import { getStudentReport } from "../../../apis/student";
 
-// 타입 정의
+// 피드백 타입 정의
 interface FeedbackItem {
-  id: string;
-  studentId: string;
-  academicContent: string;
-  behavioralContent: string;
-  attendanceContent: string;
-  attitudeContent: string;
-  otherContent: string;
-  isSharedWithStudent: boolean;
-  isSharedWithParent: boolean;
+  id: number;
+  title: string | null;
   createdAt: string;
-  updatedAt: string;
-  teacherName?: string; // 담임선생님 이름
+  scoreFeed?: string;
+  behaviorFeed?: string;
+  otherFeed?: string;
+}
+
+// 상담 타입 정의
+interface CounselingItem {
+  id: number;
+  title: string | null;
+  createdAt: string;
+  context: string;
+  plan?: string;
+}
+
+// 보고서 데이터 타입
+interface StudentReportData {
+  studentInfo?: {
+    name: string;
+    grade: number;
+    classNum?: number;
+    class?: number;
+    studentId: number;
+    studentNum?: number;
+  };
+  feedbackList?: {
+    feedbacks: FeedbackItem[];
+  };
+  counselList?: {
+    counsels: CounselingItem[];
+  };
+  data?: {
+    studentInfo?: {
+      name: string;
+      grade: number;
+      class: number;
+      studentId: number;
+    };
+    feedbackList?: FeedbackItem[];
+    counselList?: CounselingItem[];
+  };
 }
 
 // 스타일 컴포넌트
@@ -153,25 +185,6 @@ const FeedbackSectionContent = styled.p`
   margin: 0;
 `;
 
-const FeedbackSharing = styled.div`
-  padding: 0.75rem 1.25rem;
-  background-color: ${colors.grey[50]};
-  border-top: 1px solid ${colors.grey[200]};
-  display: flex;
-  gap: 1rem;
-`;
-
-const FeedbackTag = styled.span<{ shared: boolean }>`
-  font-size: 0.8rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 4px;
-  background-color: ${(props) =>
-    props.shared ? colors.success.light : colors.grey[200]};
-  color: ${(props) =>
-    props.shared ? colors.success.dark : colors.text.secondary};
-  font-weight: 500;
-`;
-
 const FilterContainer = styled.div`
   display: flex;
   gap: 1rem;
@@ -198,6 +211,31 @@ const Select = styled.select`
   &:hover {
     border-color: ${colors.primary.light};
   }
+`;
+
+// 탭 컨테이너
+
+const TabContainer = styled.div`
+  display: flex;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid ${colors.grey[300]};
+`;
+
+const TabButton = styled.button<{ active: boolean }>`
+  padding: 0.75rem 1.5rem;
+  background: ${props => props.active ? colors.primary.light : 'transparent'};
+  color: ${props => props.active ? colors.primary.dark : colors.text.secondary};
+  border: none;
+  border-bottom: 3px solid ${props => props.active ? colors.primary.main : 'transparent'};
+  font-size: 1rem;
+  font-weight: ${props => props.active ? 600 : 400};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: ${colors.grey[100]};
+    color: ${colors.primary.main};
+  }
 
   &:focus {
     outline: none;
@@ -215,74 +253,64 @@ const Select = styled.select`
   }
 `;
 
-// 임시 데이터
-const MOCK_STUDENT_ID = "1"; // 로그인한 학생 ID
-
-const MOCK_FEEDBACKS: FeedbackItem[] = [
-  {
-    id: "1",
-    studentId: "1",
-    academicContent:
-      "수학 성적이 전반적으로 향상되었습니다. 특히 방정식 부분에서 큰 진전이 있었습니다.",
-    behavioralContent:
-      "수업 중 태도가 좋아졌으며, 친구들과도 협력을 잘 합니다.",
-    attendanceContent: "결석 없이 모든 수업에 참여하였습니다.",
-    attitudeContent: "적극적인 수업 참여가 돋보입니다.",
-    otherContent: "다음 학기에는 더 높은 목표를 세워보면 좋을 것 같습니다.",
-    isSharedWithStudent: true,
-    isSharedWithParent: true,
-    createdAt: "2025-03-15T14:30:00",
-    updatedAt: "2025-03-15T14:30:00",
-    teacherName: "김선생님"
-  },
-  {
-    id: "2",
-    studentId: "1",
-    academicContent:
-      "영어 시험에서 우수한 성적을 보였습니다. 문법 부분이 특히 뛰어납니다.",
-    behavioralContent: "수업 중 집중력이 향상되었습니다.",
-    attendanceContent: "모든 수업에 출석하였습니다.",
-    attitudeContent: "수업 준비를 철저히 해오는 점이 인상적입니다.",
-    otherContent: "영어 동아리 활동도 추천드립니다.",
-    isSharedWithStudent: true,
-    isSharedWithParent: false,
-    createdAt: "2025-02-20T10:15:00",
-    updatedAt: "2025-02-20T10:15:00",
-    teacherName: "김선생님"
-  },
-  {
-    id: "3",
-    studentId: "1",
-    academicContent:
-      "국어 성적이 전 학기 대비 크게 상승했습니다. 특히 문학 작품 분석 능력이 향상되었습니다.",
-    behavioralContent: "토론 시간에 적극적으로 참여하는 모습이 인상적입니다.",
-    attendanceContent: "지각 없이 모든 수업에 참여했습니다.",
-    attitudeContent: "수업 중 질문이 많아지고 집중력이 향상되었습니다.",
-    otherContent: "문예부 활동을 시작해보는 것도 좋을 것 같습니다.",
-    isSharedWithStudent: true,
-    isSharedWithParent: true,
-    createdAt: "2025-01-10T09:20:00",
-    updatedAt: "2025-01-10T09:20:00",
-    teacherName: "박선생님"
-  },
-];
-
 // 컴포넌트
 const StudentFeedbackPage: React.FC = () => {
-  const userInfo = useUserStore((state) => state.userInfo);
+  const { userInfo } = useAuthContext();
   const [selectedYear, setSelectedYear] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  // 사용하지 않는 reportData 상태를 제거하고 데이터 처리 로직만 유지
+  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
+  const [counsels, setCounsels] = useState<CounselingItem[]>([]);
   const [filteredFeedbacks, setFilteredFeedbacks] = useState<FeedbackItem[]>([]);
+  const [activeTab, setActiveTab] = useState<'feedback' | 'counseling'>('feedback');
 
-  // 피드백 필터링 (학생에게 공유된 피드백만 표시)
+  // 학생 보고서 데이터 가져오기
   useEffect(() => {
-    const feedbacks = MOCK_FEEDBACKS.filter(
-      (feedback) => 
-        feedback.studentId === MOCK_STUDENT_ID && 
-        feedback.isSharedWithStudent
-    );
-    
-    // 연도 필터링
-    let filtered = feedbacks;
+    const fetchStudentReport = async () => {
+      if (!userInfo || !userInfo.userId) {
+        setError("로그인 정보를 확인할 수 없습니다.");
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const data: StudentReportData = await getStudentReport(Number(userInfo.userId));
+        
+        // 피드백 데이터 추출
+        let feedbackData: FeedbackItem[] = [];
+        if (data.feedbackList?.feedbacks && data.feedbackList.feedbacks.length > 0) {
+          feedbackData = data.feedbackList.feedbacks;
+        } else if (data.data?.feedbackList && data.data.feedbackList.length > 0) {
+          feedbackData = data.data.feedbackList;
+        }
+        setFeedbacks(feedbackData);
+
+        // 상담 데이터 추출
+        let counselData: CounselingItem[] = [];
+        if (data.counselList?.counsels && data.counselList.counsels.length > 0) {
+          counselData = data.counselList.counsels;
+        } else if (data.data?.counselList && data.data.counselList.length > 0) {
+          counselData = data.data.counselList;
+        }
+        setCounsels(counselData);
+
+      } catch (err) {
+        console.error("학생 보고서 데이터 조회 오류:", err);
+        setError("보고서 데이터를 불러오는데 실패했습니다.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStudentReport();
+  }, [userInfo]);
+
+  // 피드백 필터링
+  useEffect(() => {
+    let filtered = [...feedbacks];
     
     if (selectedYear) {
       filtered = filtered.filter((feedback) => {
@@ -292,7 +320,7 @@ const StudentFeedbackPage: React.FC = () => {
     }
     
     setFilteredFeedbacks(filtered);
-  }, [selectedYear]);
+  }, [feedbacks, selectedYear]);
 
   // 날짜 포맷팅 함수
   const formatDate = (dateString: string) => {
@@ -307,123 +335,183 @@ const StudentFeedbackPage: React.FC = () => {
   // 연도 목록 생성
   const getYears = () => {
     const years = new Set<string>();
-    MOCK_FEEDBACKS.forEach((feedback) => {
-      const year = new Date(feedback.createdAt).getFullYear().toString();
-      years.add(year);
+    feedbacks.forEach((feedback) => {
+      if (feedback.createdAt) {
+        try {
+          const year = new Date(feedback.createdAt).getFullYear().toString();
+          years.add(year);
+        } catch (err) {
+          console.error('날짜 파싱 오류:', err);
+        }
+      }
     });
     return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a)); // 내림차순 정렬
   };
 
+  // 학년/반/번호 정보 구성
+  const getUserInfoText = () => {
+    if (!userInfo) return "";
+    const grade = userInfo.roleInfo?.match(/\d+학년/)?.[0] || "";
+    const classNum = userInfo.roleInfo?.match(/\d+반/)?.[0] || "";
+    const studentNum = userInfo.number ? `${userInfo.number}번` : "";
+    return `${grade} ${classNum} ${studentNum}`.trim();
+  };
+
   return (
     <DashboardLayout
-      userName={userInfo?.name || "학생"}
+      userName={userInfo?.name || ""}
       userRole="학생"
-      userInfo={userInfo?.grade && userInfo?.class ? `${userInfo.grade}학년 ${userInfo.class}반` : ""}
-      notificationCount={2}
+      userInfo={getUserInfoText()}
+      notificationCount={0}
     >
       <StudentSidebar isCollapsed={false} />
       <PageContainer>
         <ContentArea>
           <PageHeader>
-            <PageTitle>피드백 내역</PageTitle>
+            <PageTitle>피드백 및 상담 내역</PageTitle>
           </PageHeader>
 
-          <FilterContainer>
-            <Select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-            >
-              <option value="">전체 연도</option>
-              {getYears().map((year) => (
-                <option key={year} value={year}>
-                  {year}년
-                </option>
-              ))}
-            </Select>
-          </FilterContainer>
+          {isLoading ? (
+            <EmptyState>
+              <h3>데이터를 불러오는 중입니다...</h3>
+            </EmptyState>
+          ) : error ? (
+            <EmptyState>
+              <h3>오류가 발생했습니다</h3>
+              <p>{error}</p>
+            </EmptyState>
+          ) : (
+            <>
+              <TabContainer>
+                <TabButton 
+                  active={activeTab === 'feedback'}
+                  onClick={() => setActiveTab('feedback')}
+                >
+                  피드백 내역
+                </TabButton>
+                <TabButton 
+                  active={activeTab === 'counseling'}
+                  onClick={() => setActiveTab('counseling')}
+                >
+                  상담 내역
+                </TabButton>
+              </TabContainer>
 
-          <Card>
-            {filteredFeedbacks.length > 0 ? (
-              <FeedbackGrid>
-                {filteredFeedbacks.map((feedback) => (
-                  <FeedbackCard key={feedback.id}>
-                    <FeedbackHeader>
-                      <FeedbackDate>
-                        {formatDate(feedback.createdAt)}
-                      </FeedbackDate>
-                    </FeedbackHeader>
-                    <FeedbackContent>
-                      {feedback.academicContent && (
-                        <FeedbackSection>
-                          <FeedbackSectionTitle>
-                            학업 성취
-                          </FeedbackSectionTitle>
-                          <FeedbackSectionContent>
-                            {feedback.academicContent}
-                          </FeedbackSectionContent>
-                        </FeedbackSection>
-                      )}
-                      {feedback.behavioralContent && (
-                        <FeedbackSection>
-                          <FeedbackSectionTitle>
-                            행동 발달
-                          </FeedbackSectionTitle>
-                          <FeedbackSectionContent>
-                            {feedback.behavioralContent}
-                          </FeedbackSectionContent>
-                        </FeedbackSection>
-                      )}
-                      {feedback.attendanceContent && (
-                        <FeedbackSection>
-                          <FeedbackSectionTitle>
-                            출석 상황
-                          </FeedbackSectionTitle>
-                          <FeedbackSectionContent>
-                            {feedback.attendanceContent}
-                          </FeedbackSectionContent>
-                        </FeedbackSection>
-                      )}
-                      {feedback.attitudeContent && (
-                        <FeedbackSection>
-                          <FeedbackSectionTitle>
-                            학습 태도
-                          </FeedbackSectionTitle>
-                          <FeedbackSectionContent>
-                            {feedback.attitudeContent}
-                          </FeedbackSectionContent>
-                        </FeedbackSection>
-                      )}
-                      {feedback.otherContent && (
-                        <FeedbackSection>
-                          <FeedbackSectionTitle>
-                            기타 사항
-                          </FeedbackSectionTitle>
-                          <FeedbackSectionContent>
-                            {feedback.otherContent}
-                          </FeedbackSectionContent>
-                        </FeedbackSection>
-                      )}
-                    </FeedbackContent>
-                    <FeedbackSharing>
-                      <FeedbackTag shared={feedback.isSharedWithStudent}>
-                        학생 공유{" "}
-                        {feedback.isSharedWithStudent ? "✓" : "✗"}
-                      </FeedbackTag>
-                      <FeedbackTag shared={feedback.isSharedWithParent}>
-                        학부모 공유{" "}
-                        {feedback.isSharedWithParent ? "✓" : "✗"}
-                      </FeedbackTag>
-                    </FeedbackSharing>
-                  </FeedbackCard>
-                ))}
-              </FeedbackGrid>
-            ) : (
-              <EmptyState>
-                <h3>표시할 피드백이 없습니다</h3>
-                <p>선생님이 공유한 피드백이 이곳에 표시됩니다.</p>
-              </EmptyState>
-            )}
-          </Card>
+              {activeTab === 'feedback' && (
+                <FilterContainer>
+                  <Select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                  >
+                    <option value="">전체 연도</option>
+                    {getYears().map((year) => (
+                      <option key={year} value={year}>
+                        {year}년
+                      </option>
+                    ))}
+                  </Select>
+                </FilterContainer>
+              )}
+            </>
+          )}
+
+          {!isLoading && !error && (
+            <Card>
+              {activeTab === 'feedback' ? (
+                filteredFeedbacks.length > 0 ? (
+                  <FeedbackGrid>
+                    {filteredFeedbacks.map((feedback, index) => (
+                      <FeedbackCard key={feedback.id || index}>
+                        <FeedbackHeader>
+                          <FeedbackDate>
+                            {feedback.title || '피드백'}
+                            <div>{formatDate(feedback.createdAt)}</div>
+                          </FeedbackDate>
+                        </FeedbackHeader>
+                        <FeedbackContent>
+                          {feedback.scoreFeed && (
+                            <FeedbackSection>
+                              <FeedbackSectionTitle>
+                                학업 성취
+                              </FeedbackSectionTitle>
+                              <FeedbackSectionContent>
+                                {feedback.scoreFeed}
+                              </FeedbackSectionContent>
+                            </FeedbackSection>
+                          )}
+                          {feedback.behaviorFeed && (
+                            <FeedbackSection>
+                              <FeedbackSectionTitle>
+                                행동 발달
+                              </FeedbackSectionTitle>
+                              <FeedbackSectionContent>
+                                {feedback.behaviorFeed}
+                              </FeedbackSectionContent>
+                            </FeedbackSection>
+                          )}
+                          {feedback.otherFeed && (
+                            <FeedbackSection>
+                              <FeedbackSectionTitle>
+                                기타 사항
+                              </FeedbackSectionTitle>
+                              <FeedbackSectionContent>
+                                {feedback.otherFeed}
+                              </FeedbackSectionContent>
+                            </FeedbackSection>
+                          )}
+                        </FeedbackContent>
+                      </FeedbackCard>
+                    ))}
+                  </FeedbackGrid>
+                ) : (
+                  <EmptyState>
+                    <h3>표시할 피드백이 없습니다</h3>
+                    <p>선생님이 작성한 피드백이 이곳에 표시됩니다.</p>
+                  </EmptyState>
+                )
+              ) : (
+                counsels.length > 0 ? (
+                  <FeedbackGrid>
+                    {counsels.map((counsel, index) => (
+                      <FeedbackCard key={counsel.id || index}>
+                        <FeedbackHeader>
+                          <FeedbackDate>
+                            {counsel.title || '상담 내용'}
+                            <div>{formatDate(counsel.createdAt)}</div>
+                          </FeedbackDate>
+                        </FeedbackHeader>
+                        <FeedbackContent>
+                          <FeedbackSection>
+                            <FeedbackSectionTitle>
+                              상담 내용
+                            </FeedbackSectionTitle>
+                            <FeedbackSectionContent>
+                              {counsel.context}
+                            </FeedbackSectionContent>
+                          </FeedbackSection>
+                          {counsel.plan && (
+                            <FeedbackSection>
+                              <FeedbackSectionTitle>
+                                후속 계획
+                              </FeedbackSectionTitle>
+                              <FeedbackSectionContent>
+                                {counsel.plan}
+                              </FeedbackSectionContent>
+                            </FeedbackSection>
+                          )}
+                        </FeedbackContent>
+                      </FeedbackCard>
+                    ))}
+                  </FeedbackGrid>
+                ) : (
+                  <EmptyState>
+                    <h3>표시할 상담 내역이 없습니다</h3>
+                    <p>선생님과의 상담 내역이 이곳에 표시됩니다.</p>
+                  </EmptyState>
+                )
+              )}
+            </Card>
+          )}
         </ContentArea>
       </PageContainer>
     </DashboardLayout>

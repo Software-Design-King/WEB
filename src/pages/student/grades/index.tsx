@@ -19,6 +19,7 @@ import {
 import { colors } from "../../../components/common/Common.styles";
 import { getStudentGrades } from "../../../apis/grades";
 import { GradeData } from "../../../types/grades";
+import { useAuthContext } from "../../../hooks/useAuthContext";
 
 // 학기 옵션
 const semesterOptions = [
@@ -148,17 +149,26 @@ const StudentGradesPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [gradesData, setGradesData] = useState<GradeData[]>([]);
   const [error, setError] = useState<string | null>(null);
+  
+  // 인증 컨텍스트에서 사용자 정보 가져오기
+  const { userInfo } = useAuthContext();
 
   // 성적 데이터 불러오기
   useEffect(() => {
     const fetchGrades = async () => {
+      // 사용자 정보가 없으면 요청 중단
+      if (!userInfo || !userInfo.userId) {
+        setError("로그인 정보를 확인할 수 없습니다.");
+        return;
+      }
+      
       setIsLoading(true);
       setError(null);
 
       try {
-        // 권도훈 학생의 ID를 고정으로 사용 (테스트용)
+        // 로그인한 학생의 ID 사용
         const data = await getStudentGrades(
-          "12345", // 권도훈 학생 ID
+          String(userInfo.userId),
           selectedSemester
         );
         setGradesData(data);
@@ -173,7 +183,7 @@ const StudentGradesPage = () => {
     };
 
     fetchGrades();
-  }, [selectedSemester]);
+  }, [selectedSemester, userInfo]);
 
   // 레이더 차트 데이터 변환
   const radarData = gradesData.map((item) => ({
@@ -186,12 +196,21 @@ const StudentGradesPage = () => {
     setSelectedSemester(e.target.value);
   };
 
+  // 학년/반/번호 정보 구성
+  const getUserInfoText = () => {
+    if (!userInfo) return "";
+    const grade = userInfo.roleInfo?.match(/\d+학년/)?.[0] || "";
+    const classNum = userInfo.roleInfo?.match(/\d+반/)?.[0] || "";
+    const studentNum = userInfo.number ? `${userInfo.number}번` : "";
+    return `${grade} ${classNum} ${studentNum}`.trim();
+  };
+
   return (
     <DashboardLayout
-      userName="권도훈"
+      userName={userInfo?.name || ""}
       userRole="학생"
-      userInfo="2학년 3반 12번"
-      notificationCount={2}
+      userInfo={getUserInfoText()}
+      notificationCount={0}
     >
       <StudentSidebar {...{ isCollapsed: false }} />
 
