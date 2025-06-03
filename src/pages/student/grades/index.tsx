@@ -17,9 +17,8 @@ import {
   ContentContainer,
 } from "../../../components/dashboard/DashboardComponents.styles";
 import { colors } from "../../../components/common/Common.styles";
-import { getStudentGrades } from "../../../apis/grades";
-import { GradeData } from "../../../types/grades";
-import { useAuthContext } from "../../../hooks/useAuthContext";
+import { getStudentScore, StudentScoreResponse, Subject } from "../../../apis/student";
+import { useUserStore } from "../../../stores/userStore";
 
 // 학기 옵션
 const semesterOptions = [
@@ -147,11 +146,12 @@ const StudentGradesPage = () => {
   // 상태 관리
   const [selectedSemester, setSelectedSemester] = useState(semesterOptions[0]);
   const [isLoading, setIsLoading] = useState(false);
-  const [gradesData, setGradesData] = useState<GradeData[]>([]);
+  const [scoreResponse, setScoreResponse] = useState<StudentScoreResponse | null>(null);
+  const [gradesData, setGradesData] = useState<any[]>([]); // 현재 선택된 학기의 성적 데이터
   const [error, setError] = useState<string | null>(null);
   
-  // 인증 컨텍스트에서 사용자 정보 가져오기
-  const { userInfo } = useAuthContext();
+  // Zustand에서 사용자 정보 가져오기
+  const userInfo = useUserStore((state) => state.userInfo);
 
   // 성적 데이터 불러오기
   useEffect(() => {
@@ -166,16 +166,16 @@ const StudentGradesPage = () => {
       setError(null);
 
       try {
-        // 로그인한 학생의 ID 사용
-        const data = await getStudentGrades(
-          String(userInfo.userId),
-          selectedSemester
-        );
-        setGradesData(data);
+        // 교사용과 동일한 API 사용: /score/{studentId}
+        const response = await getStudentScore(Number(userInfo.userId));
+        setScoreResponse(response);
+        
+        // 현재 선택된 학기에 맞는 데이터 추출
+        const currentSemesterData = extractCurrentSemesterData(response, selectedSemester);
+        setGradesData(currentSemesterData);
       } catch (err) {
         console.error("성적 정보 로드 오류:", err);
         setError("성적 정보를 불러오는데 실패했습니다.");
-        // 데이터가 없는 경우 임시로 비어있는 배열 설정
         setGradesData([]);
       } finally {
         setIsLoading(false);
@@ -183,7 +183,15 @@ const StudentGradesPage = () => {
     };
 
     fetchGrades();
-  }, [selectedSemester, userInfo]);
+  }, [userInfo]); // selectedSemester 의존성 제거 - 학기 변경은 로컬에서 처리
+  
+  // 학기 변경 시 로컬 데이터에서 필터링
+  useEffect(() => {
+    if (scoreResponse) {
+      const filteredData = extractCurrentSemesterData(scoreResponse, selectedSemester);
+      setGradesData(filteredData);
+    }
+  }, [selectedSemester, scoreResponse]);
 
   // 레이더 차트 데이터 변환
   const radarData = gradesData.map((item) => ({
@@ -199,10 +207,56 @@ const StudentGradesPage = () => {
   // 학년/반/번호 정보 구성
   const getUserInfoText = () => {
     if (!userInfo) return "";
-    const grade = userInfo.roleInfo?.match(/\d+학년/)?.[0] || "";
-    const classNum = userInfo.roleInfo?.match(/\d+반/)?.[0] || "";
-    const studentNum = userInfo.number ? `${userInfo.number}번` : "";
-    return `${grade} ${classNum} ${studentNum}`.trim();
+    
+    // roleInfo("1학년 2반")에서 학년, 반 정보 추출
+    const roleInfoParts = userInfo.roleInfo
+      ? userInfo.roleInfo.match(/(\d+)학년\s*(\d+)반/)
+      : null;
+      
+    const grade = roleInfoParts ? roleInfoParts[1] : "";
+    const classNum = roleInfoParts ? roleInfoParts[2] : "";
+    
+    return `${grade}학년 ${classNum}반 ${userInfo.number || ""}번`;
+  };
+  
+  // API 응답에서 현재 학기 성적 데이터 추출하는 함수
+  const extractCurrentSemesterData = (scoreData: StudentScoreResponse | null, semester: string) => {
+    if (!scoreData || !scoreData.data) return [];
+    
+    // 학기 문자열에서 학년과 학기 추출 (예: "2025-1학기" -> grade="2025", semesterNum="1")
+    const semesterMatch = semester.match(/(\d+)-(\d+)학기/);
+    if (!semesterMatch) return [];
+    
+    const grade = semesterMatch[1];
+    const semesterNum = semesterMatch[2];
+    
+    // API 응답 데이터에서 해당 학년/학기 데이터 추출
+    const gradeData = scoreData.data.scoresByGradeAndSemester[grade];
+    if (!gradeData) return [];
+    
+    const semesterData = gradeData[semesterNum];
+    if (!semesterData) return [];
+    
+    // 과목별 성적을 GradeData 형태로 변환
+    return semesterData.subjects.map((subject, index) => ({
+      id: String(index),
+      subject: subject.name,
+      score: subject.score,
+      grade: getLetterGrade(subject.score),
+      rank: semesterData.classRank + "/" + (semesterData.wholeRank || 30),
+      semester: `${grade}-${semesterNum}학기`,
+      studentId: String(userInfo?.userId || ""),
+      examType: subject.examType
+    }));
+  };
+  
+  // 점수를 기반으로 등급 계산
+  const getLetterGrade = (score: number): string => {
+    if (score >= 90) return "A";
+    if (score >= 80) return "B";
+    if (score >= 70) return "C";
+    if (score >= 60) return "D";
+    return "F";
   };
 
   return (
