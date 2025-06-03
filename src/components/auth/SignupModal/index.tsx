@@ -384,6 +384,9 @@ enum Step {
   StudentDetails = 3,
 }
 
+// 학생은 2단계(유형선택, 기본정보)만 진행, 교사/학부모는 기존 단계 유지
+
+
 const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, kakaoToken }) => {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -505,52 +508,52 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, kakaoToken }
     switch (step) {
       case Step.UserType:
         return !!formData.userType;
-      
       case Step.BasicInfo:
+        if (formData.userType === 'STUDENT') {
+          if (!formData.userName) {
+            setError('이름을 입력해주세요.');
+            return false;
+          }
+          if (!formData.enrollCode) {
+            setError('가입 코드를 입력해주세요.');
+            return false;
+          }
+          // 학생은 기타 필드 검증 없이 바로 통과
+          return true;
+        }
         if (formData.userType === 'PARENT') {
           if (!formData.userName || !formData.childName) {
             setError('모든 필수 항목을 입력해주세요.');
             return false;
           }
-        } else {
-          if (!formData.userName) {
-            setError('이름을 입력해주세요.');
+          if (!formData.grade || !formData.classNum) {
+            setError('학년과 반을 선택해주세요.');
             return false;
           }
+          if (!formData.number) {
+            setError('자녀의 번호를 입력해주세요.');
+            return false;
+          }
+          return true;
+        }
+        // 교사
+        if (!formData.userName) {
+          setError('이름을 입력해주세요.');
+          return false;
         }
         if (!formData.grade || !formData.classNum) {
           setError('학년과 반을 선택해주세요.');
           return false;
         }
-        if (formData.userType === 'PARENT' && !formData.number) {
-          setError('자녀의 번호를 입력해주세요.');
-          return false;
-        }
-        // For students, number is no longer a required input in the form
-        if (formData.userType === 'STUDENT' && !formData.enrollCode) {
-          setError('가입 코드를 입력해주세요.');
-          return false;
-        }
         return true;
-      
       case Step.AdditionalInfo:
-        if (formData.userType !== 'PARENT') {
+        if (formData.userType === 'TEACHER') {
           if (!formData.gender || !formData.birthDate || !formData.contact) {
             setError('모든 필수 항목을 입력해주세요.');
             return false;
           }
         }
         return true;
-      
-      case Step.StudentDetails:
-        if (formData.userType === 'STUDENT') {
-          if (!formData.age || !formData.address || !formData.parentContact) {
-            setError('모든 필수 항목을 입력해주세요.');
-            return false;
-          }
-        }
-        return true;
-      
       default:
         return true;
     }
@@ -565,16 +568,17 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, kakaoToken }
 
   // 사용자 유형에 따른 총 단계 수 계산
   const getTotalSteps = (): number => {
+    if (formData.userType === 'STUDENT') return 2; // 학생: 유형 선택 + 기본 정보
     if (formData.userType === 'PARENT') return 2; // 유형 선택 + 기본 정보
     if (formData.userType === 'TEACHER') return 3; // 유형 선택 + 기본 정보 + 추가 정보
-    return 4; // 학생: 모든 단계
+    return 2;
   };
 
   // 현재 단계가 해당 유형의 마지막 단계인지 확인
   const isLastStep = (): boolean => {
     const totalSteps = getTotalSteps();
     return currentStep === totalSteps - 1;
-  };
+  }
 
   // 단계 이름 가져오기
   const getStepName = (step: number): string => {
@@ -729,15 +733,9 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, kakaoToken }
           </FormSection>
         )}
 
-        {currentStep === Step.AdditionalInfo && (
+        {/* 학생은 추가정보 단계 자체를 렌더링하지 않음 */}
+        {currentStep === Step.AdditionalInfo && formData.userType !== 'STUDENT' && (
           <FormSection>
-            {/* 학생은 입력 없이 안내 메시지 */}
-            {formData.userType === 'STUDENT' && (
-              <>
-                <SectionTitle>추가 정보</SectionTitle>
-                <InputNote>학생은 추가로 입력할 정보가 없습니다. '다음'을 눌러주세요.</InputNote>
-              </>
-            )}
             {/* 교사 기존 필드 유지 */}
             {formData.userType === 'TEACHER' && (
               <>
