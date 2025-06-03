@@ -33,6 +33,7 @@ interface FormValues {
   grade?: string;
   class?: string;
   number?: string;
+  enrollCode?: string; // Added for student enrollment code
   subject?: string;
   homeroomGrade?: string;
   homeroomClass?: string;
@@ -160,6 +161,7 @@ const SignupModal: React.FC<SignupModalProps> = ({
           grade: data.grade ? parseInt(data.grade) : null,
           classNum: data.class ? parseInt(data.class) : null,
           number: data.number ? parseInt(data.number) : null,
+          enrollCode: data.enrollCode || null, // Include enrollCode in the request if provided
         };
 
         // 선택적 필드 추가
@@ -339,6 +341,17 @@ const SignupModal: React.FC<SignupModalProps> = ({
 
           {selectedRole === "STUDENT" && (
             <div>
+              <FormField>
+                <FormLabel htmlFor="enrollCode">가입코드</FormLabel>
+                <FormInput
+                  id="enrollCode"
+                  {...register("enrollCode")}
+                  placeholder="교사가 제공한 가입코드를 입력하세요 (선택사항)"
+                />
+                <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                  * 가입코드를 입력하면 교사가 등록한 학생 정보와 연동됩니다.
+                </div>
+              </FormField>
               <FormField>
                 <FormLabel htmlFor="grade">학년</FormLabel>
                 <FormSelect

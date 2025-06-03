@@ -19,6 +19,7 @@ export interface Student {
   studentId: number;
   name: string;
   studentNum?: number; // 학생 번호
+  enrollCode?: string; // 학생 가입 코드
 }
 
 // 학생 상세 정보 인터페이스
@@ -282,53 +283,50 @@ export const enrollStudents = async (
   const token = localStorage.getItem("token");
 
   try {
-    // Excel에서 날짜가 숫자 형식(예: 39948)으로 변환되는 문제 처리
+    // 날짜 데이터 포맷 처리 (ISO 문자열로 변환)
     const processedStudents = students.map(student => {
-      const updatedStudent = { ...student };
-      
-      // birthDate가 숫자 형식인지 확인
-      if (updatedStudent.birthDate && !isNaN(Number(updatedStudent.birthDate))) {
-        // Excel 날짜를 YYYY-MM-DD 형식으로 변환
-        // Excel 날짜는 1900년 1월 1일부터의 일수 (1900-01-01 = 1)
-        try {
-          const excelDate = Number(updatedStudent.birthDate);
-          const date = new Date(Math.floor((excelDate - 25569) * 86400 * 1000));
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const day = String(date.getDate()).padStart(2, '0');
-          updatedStudent.birthDate = `${year}-${month}-${day}`;
-        } catch (e) {
-          console.error('날짜 변환 오류:', e);
-          // 변환 실패 시 원래 값 유지
-        }
+      // 만약 birthDate가 Date 객체이거나 날짜 형식이 아닌 경우 변환
+      if (
+        student.birthDate &&
+        (typeof student.birthDate === "number" ||
+          student.birthDate instanceof Date)
+      ) {
+        return {
+          ...student,
+          birthDate:
+            typeof student.birthDate === "number"
+              ? new Date(student.birthDate).toISOString().split("T")[0]
+              : (student.birthDate as Date).toISOString().split("T")[0],
+        };
       }
-      
-      return updatedStudent;
+      return student;
     });
 
-    const response = await axios.post(
-      `${BASE_URL}/teacher/enroll/students`,
-      { students: processedStudents },
+    const response = await axios.post<EnrollStudentResponse>(
+      `${BASE_URL}/students/enroll`,
+      {
+        students: processedStudents,
+      },
       {
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       }
     );
 
     return response.data;
   } catch (error) {
-    console.error("학생 등록 오류:", error);
-
-    // 기본 에러 응답 반환
-    return {
-      code: 50000,
-      message: "학생 등록에 실패했습니다.",
-      data: {
-        enrolledCount: 0,
-      },
-    };
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(
+        `학생 등록 오류: ${error.response.status} ${error.response.data?.message || ""}`,
+        { cause: error }
+      );
+    } else {
+      throw new Error("학생 등록 중 알 수 없는 오류가 발생했습니다.", {
+        cause: error,
+      });
+    }
   }
 };
 
@@ -389,5 +387,57 @@ export const updateStudentInfo = async (
         updatedFields: [],
       },
     };
+  }
+};
+
+/**
+ * 학생 보고서 PDF 다운로드
+ * @param studentId 학생 ID
+ * @returns Blob 형태의 PDF 데이터
+ */
+export const downloadStudentReportPDF = async (studentId: number): Promise<Blob> => {
+  const token = localStorage.getItem("token");
+
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/student/${studentId}/report/pdf`, 
+      {
+        responseType: 'blob',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Accept': 'application/pdf'
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("학생 보고서 PDF 다운로드 오류:", error);
+    throw new Error("PDF 생성에 실패했습니다.");
+  }
+};
+
+/**
+ * 학생 보고서 데이터 조회
+ * @param studentId 학생 ID
+ * @returns 보고서 데이터 (성적, 출석, 상담 등)
+ */
+export const getStudentReport = async (studentId: number): Promise<any> => {
+  const token = localStorage.getItem("token");
+
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/student/report/${studentId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("학생 보고서 데이터 조회 오류:", error);
+    throw new Error("보고서 데이터를 불러오는데 실패했습니다.");
   }
 };

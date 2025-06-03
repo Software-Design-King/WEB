@@ -10,6 +10,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import axios from "axios";
 import { getStudentDetail, enrollStudents } from "../../../apis/student";
 import DaumPostcode from "react-daum-postcode";
+import StudentReportPDFImproved from "../../../components/StudentReportPDFImproved";
 
 // 다음 우편번호 API 응답 인터페이스
 interface DaumPostcodeData {
@@ -52,8 +53,6 @@ interface StudentDetail {
   studentNum: number;
 }
 
-// 제거됨: 더 이상 사용하지 않는 임시 학생 데이터
-
 const ClassroomStudents = () => {
   // Zustand 스토어에서 사용자 정보 가져오기
   const userInfo = useUserStore((state) => state.userInfo);
@@ -78,6 +77,10 @@ const ClassroomStudents = () => {
   );
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [selectedStudentId, setSelectedStudentId] = useState<number | null>(
+    null
+  );
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   const [newStudent, setNewStudent] = useState({
     userName: "",
@@ -433,6 +436,25 @@ const ClassroomStudents = () => {
               </svg>
               일괄 등록
             </ClassroomStudentsStyles.DropdownButton>
+            <ClassroomStudentsStyles.DropdownButton
+              onClick={() => {
+                setIsReportModalOpen(true);
+              }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"
+                  fill={colors.primary.main}
+                />
+              </svg>
+              학생 종합 보고서
+            </ClassroomStudentsStyles.DropdownButton>
           </ClassroomStudentsStyles.ButtonGroup>
         </ClassroomStudentsStyles.Header>
 
@@ -515,11 +537,23 @@ const ClassroomStudents = () => {
                 <ClassroomStudentsStyles.Table>
                   <thead>
                     <tr>
-                      <ClassroomStudentsStyles.TableHeader width="100px">
+                      <ClassroomStudentsStyles.TableHeader width="80px">
                         번호
                       </ClassroomStudentsStyles.TableHeader>
                       <ClassroomStudentsStyles.TableHeader>
                         이름
+                      </ClassroomStudentsStyles.TableHeader>
+                      <ClassroomStudentsStyles.TableHeader
+                        width="160px"
+                        style={{ textAlign: "center" }}
+                      >
+                        가입코드
+                      </ClassroomStudentsStyles.TableHeader>
+                      <ClassroomStudentsStyles.TableHeader
+                        width="80px"
+                        style={{ textAlign: "center" }}
+                      >
+                        보고서
                       </ClassroomStudentsStyles.TableHeader>
                     </tr>
                   </thead>
@@ -527,10 +561,31 @@ const ClassroomStudents = () => {
                     {currentStudents.length === 0 ? (
                       <tr>
                         <ClassroomStudentsStyles.TableCell
-                          colSpan={2}
-                          style={{ textAlign: "center" }}
+                          colSpan={4}
+                          style={{ textAlign: "center", padding: "24px 0" }}
                         >
-                          학생 정보가 없습니다.
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              gap: "12px",
+                            }}
+                          >
+                            <svg
+                              width="48"
+                              height="48"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="M12 6C13.1 6 14 6.9 14 8C14 9.1 13.1 10 12 10C10.9 10 10 9.1 10 8C10 6.9 10.9 6 12 6ZM12 15C14.7 15 17.8 16.29 18 17V18H6V17.01C6.2 16.29 9.3 15 12 15ZM12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4ZM12 13C9.33 13 4 14.34 4 17V20H20V17C20 14.34 14.67 13 12 13Z"
+                                fill="#e0e0e0"
+                              />
+                            </svg>
+                            <span>학생 정보가 없습니다.</span>
+                          </div>
                         </ClassroomStudentsStyles.TableCell>
                       </tr>
                     ) : (
@@ -540,13 +595,118 @@ const ClassroomStudents = () => {
                           onClick={() =>
                             handleViewStudentDetail(student.studentId)
                           }
+                          style={{
+                            transition: "all 0.2s ease",
+                            cursor: "pointer",
+                            background: "white",
+                            borderBottom: "1px solid #f0f0f0",
+                          }}
                         >
-                          <ClassroomStudentsStyles.StudentIdCell>
-                            {student.studentNum || "-"}
+                          <ClassroomStudentsStyles.StudentIdCell
+                            style={{
+                              padding: "14px 16px",
+                              textAlign: "center",
+                              fontWeight: "500",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: "36px",
+                                height: "36px",
+                                borderRadius: "50%",
+                                background: colors.primary.lighter,
+                                color: colors.primary.dark,
+                                fontWeight: "bold",
+                              }}
+                            >
+                              {student.studentNum || "-"}
+                            </div>
                           </ClassroomStudentsStyles.StudentIdCell>
-                          <ClassroomStudentsStyles.StudentNameCell>
-                            {student.name}
+                          <ClassroomStudentsStyles.StudentNameCell
+                            style={{
+                              padding: "14px 16px",
+                              fontWeight: "500",
+                            }}
+                          >
+                            <div
+                              style={{ display: "flex", alignItems: "center" }}
+                            >
+                              <div
+                                style={{
+                                  width: "40px",
+                                  height: "40px",
+                                  borderRadius: "50%",
+                                  background: `linear-gradient(135deg, ${colors.secondary.main}, ${colors.primary.main})`,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  marginRight: "12px",
+                                  color: "white",
+                                  fontWeight: "bold",
+                                  fontSize: "1.1rem",
+                                }}
+                              >
+                                {student.name.charAt(0)}
+                              </div>
+                              {student.name}
+                            </div>
                           </ClassroomStudentsStyles.StudentNameCell>
+                          <ClassroomStudentsStyles.TableCell
+                            style={{
+                              padding: "14px 16px",
+                              textAlign: "center",
+                            }}
+                          >
+                            <span
+                              style={{
+                                background: colors.primary.lighter,
+                                color: colors.primary.dark,
+                                padding: "8px 12px",
+                                borderRadius: "16px",
+                                fontFamily: "monospace",
+                                fontWeight: "bold",
+                                letterSpacing: "0.8px",
+                                fontSize: "0.95rem",
+                                display: "inline-block",
+                                minWidth: "100px",
+                              }}
+                            >
+                              {student.enrollCode || "-"}
+                            </span>
+                          </ClassroomStudentsStyles.TableCell>
+                          <ClassroomStudentsStyles.TableCell
+                            style={{
+                              padding: "14px 16px",
+                              textAlign: "center",
+                            }}
+                          >
+                            <button
+                              className="text-purple-500 hover:text-purple-700 transition-colors"
+                              onClick={() => {
+                                setSelectedStudentId(student.studentId);
+                                setIsReportModalOpen(true);
+                              }}
+                              title="학생 종합 보고서"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                className="w-5 h-5"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                />
+                              </svg>
+                            </button>
+                          </ClassroomStudentsStyles.TableCell>
                         </ClassroomStudentsStyles.TableRow>
                       ))
                     )}
@@ -567,19 +727,120 @@ const ClassroomStudents = () => {
                   <ClassroomStudentsStyles.StudentCard
                     key={student.studentId}
                     onClick={() => handleViewStudentDetail(student.studentId)}
+                    style={{
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                      borderRadius: "10px",
+                      overflow: "hidden",
+                      position: "relative",
+                      transition: "transform 0.2s, box-shadow 0.2s",
+                    }}
                   >
-                    <ClassroomStudentsStyles.CardAvatar>
-                      {student.name.charAt(0)}
-                    </ClassroomStudentsStyles.CardAvatar>
-
-                    <ClassroomStudentsStyles.CardHeader>
-                      <ClassroomStudentsStyles.CardName>
+                    {/* 헤더 영역 (그라데이션 배경) */}
+                    <div
+                      style={{
+                        background: `linear-gradient(135deg, ${colors.primary.light}, ${colors.primary.main})`,
+                        padding: "24px 16px 16px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexDirection: "column",
+                        color: "white",
+                        position: "relative",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "64px",
+                          height: "64px",
+                          borderRadius: "50%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "28px",
+                          fontWeight: "bold",
+                          background: "white",
+                          color: colors.primary.dark,
+                          marginBottom: "12px",
+                          boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+                        }}
+                      >
+                        {student.name.charAt(0)}
+                      </div>
+                      <ClassroomStudentsStyles.CardName
+                        style={{
+                          fontSize: "1.2rem",
+                          fontWeight: "600",
+                          marginBottom: "4px",
+                        }}
+                      >
                         {student.name}
                       </ClassroomStudentsStyles.CardName>
-                      <ClassroomStudentsStyles.CardId>
+                      <ClassroomStudentsStyles.CardId
+                        style={{
+                          fontSize: "0.85rem",
+                          opacity: 0.9,
+                          backgroundColor: "rgba(255,255,255,0.2)",
+                          padding: "2px 8px",
+                          borderRadius: "12px",
+                        }}
+                      >
                         번호: <span>{student.studentNum || "-"}</span>
                       </ClassroomStudentsStyles.CardId>
-                    </ClassroomStudentsStyles.CardHeader>
+                    </div>
+
+                    {/* 정보 영역 */}
+                    <div style={{ padding: "16px", background: "white" }}>
+                      <div
+                        style={{
+                          marginTop: "4px",
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                        }}
+                      >
+                        <div
+                          style={{
+                            backgroundColor: colors.primary.lighter,
+                            color: colors.primary.dark,
+                            padding: "6px 10px",
+                            borderRadius: "12px",
+                            fontFamily: "monospace",
+                            fontSize: "0.9rem",
+                            fontWeight: "bold",
+                            letterSpacing: "0.5px",
+                            textAlign: "center",
+                          }}
+                        >
+                          {student.enrollCode || "-"}
+                        </div>
+                        <button
+                          className="text-purple-500 hover:text-purple-700 transition-colors"
+                          onClick={() => {
+                            setSelectedStudentId(student.studentId);
+                            setIsReportModalOpen(true);
+                          }}
+                          title="학생 종합 보고서"
+                          style={{
+                            marginLeft: "8px",
+                          }}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            className="w-5 h-5"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
                   </ClassroomStudentsStyles.StudentCard>
                 ))}
               </ClassroomStudentsStyles.CardGrid>
@@ -1169,6 +1430,96 @@ const ClassroomStudents = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* 학생 종합 보고서 모달 */}
+        {isReportModalOpen && selectedStudentId && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 1100,
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: "white",
+                padding: "20px",
+                borderRadius: "8px",
+                width: "500px",
+                maxWidth: "90%",
+                position: "relative",
+              }}
+            >
+              <button
+                onClick={() => setIsReportModalOpen(false)}
+                style={{
+                  position: "absolute",
+                  top: "10px",
+                  right: "10px",
+                  background: "none",
+                  border: "none",
+                  fontSize: "18px",
+                  cursor: "pointer",
+                  zIndex: 1,
+                }}
+              >
+                ✕
+              </button>
+              <h3
+                style={{
+                  marginBottom: "1.5rem",
+                  color: colors.primary.main,
+                }}
+              >
+                학생 종합 보고서
+              </h3>
+              <div
+                style={{
+                  padding: "1rem",
+                  border: "1px solid #ddd",
+                  borderRadius: "8px",
+                  backgroundColor: "#f9f9f9",
+                }}
+              >
+                <p
+                  style={{
+                    color: "#666",
+                    fontSize: "14px",
+                    marginBottom: "1rem",
+                  }}
+                >
+                  이 보고서는 학생의 기본 정보, 출결 현황, 성적, 교사 피드백 및
+                  상담 내역을 포함하고 있습니다.
+                </p>
+                <p
+                  style={{
+                    color: "#666",
+                    fontSize: "14px",
+                  }}
+                >
+                  PDF 파일로 저장하여 열람하거나 보관할 수 있습니다.
+                </p>
+              </div>
+              <StudentReportPDFImproved
+                studentId={selectedStudentId}
+                onSuccess={() => {
+                  // 성공 시 알림 표시 등 추가 가능
+                }}
+                onError={(error) => {
+                  console.error("보고서 생성 오류:", error);
+                  // 에러 처리 로직 추가 가능
+                }}
+              />
+            </div>
+          </div>
+        )}
       </ContentContainer>
     </DashboardLayout>
   );
