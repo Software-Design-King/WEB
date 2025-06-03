@@ -470,10 +470,17 @@ const SignupModal: React.FC<SignupModalProps> = ({ isOpen, onClose, kakaoToken }
       // 회원가입 API 호출
       const response = await signup(apiPayload, kakaoToken);
       
-      if (response.success && response.token && response.userInfo) {
-        // 성공적인 회원가입 후 로그인 처리
-        login(response.token, response.userInfo);
-
+      if (response.success && response.token) {
+        // 회원가입 후 받은 토큰으로 사용자 정보 fetch
+        login(response.token, response.userInfo); // 기존 로그인(스토리지 저장)
+        try {
+          // Zustand에 userInfo 저장
+          const userInfo = await window.__zustand__?.useUserStore?.getState?.().loadUserInfo?.(response.token);
+          if (!userInfo) throw new Error('사용자 정보 저장 실패');
+        } catch (e) {
+          setError('사용자 정보 저장에 실패했습니다.');
+          return;
+        }
         // 사용자 유형에 따른 리다이렉트
         if (formData.userType === 'STUDENT' || formData.userType === 'PARENT') {
           navigate('/student/dashboard');
