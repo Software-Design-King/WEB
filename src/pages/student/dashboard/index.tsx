@@ -181,7 +181,7 @@ const StudentDashboard = () => {
             </NavDescription>
           </NavigationCard>
 
-          {/* 피드백 관리 */}
+          {/* 피드백 및 상담내역 통합 */}
           <NavigationCard
             onClick={() => (window.location.href = "/student/feedback")}
           >
@@ -189,26 +189,12 @@ const StudentDashboard = () => {
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M20 2H4C2.9 2 2.01 2.9 2.01 4L2 22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" fill={colors.primary.main} opacity="0.3" />
                 <path d="M13 14H11V12H13V14ZM13 10H11V6H13V10Z" fill={colors.primary.main} />
+                <path d="M16 11.78C16 10.73 15.71 9.79 15.21 8.98C15.7 8.52 16 7.87 16 7.14C16 5.96 15.04 5 13.86 5C13 5 12.27 5.43 11.86 6.14C11 6.04 10.13 6 9.23 6C6.36 6 3.87 6.89 3.87 8V10C3.87 11.11 6.36 12 9.23 12C12.1 12 14.59 11.11 14.59 10" stroke={colors.primary.main} strokeWidth="1.5" />
               </svg>
             </NavIcon>
-            <NavTitle>피드백 열람</NavTitle>
+            <NavTitle>피드백 및 상담내역</NavTitle>
             <NavDescription>
-              교사로부터 받은 피드백을 확인하고 관리할 수 있습니다.
-            </NavDescription>
-          </NavigationCard>
-
-          {/* 상담내역 관리 */}
-          <NavigationCard
-            onClick={() => (window.location.href = "/student/consultation")}
-          >
-            <NavIcon>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" fill={colors.primary.main} />
-              </svg>
-            </NavIcon>
-            <NavTitle>상담내역 관리</NavTitle>
-            <NavDescription>
-              상담 일정을 예약하고 이전 상담 내역을 확인할 수 있습니다.
+              교사로부터 받은 피드백과 상담 내역을 확인할 수 있습니다.
             </NavDescription>
           </NavigationCard>
         </DashboardGridContainer>

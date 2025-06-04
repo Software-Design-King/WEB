@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import styled from "@emotion/styled";
 import { colors } from "../../../components/common/Common.styles";
 import DashboardLayout from "../../../components/layout/DashboardLayout";
 import StudentSidebar from "../../../components/layout/StudentSidebar";
 import { useAuthContext } from "../../../hooks/useAuthContext";
-import { getStudentReport } from "../../../apis/student";
+import { message } from "antd";
+import axios from "axios";
 
 // 피드백 타입 정의
 interface FeedbackItem {
@@ -265,48 +266,96 @@ const StudentFeedbackPage: React.FC = () => {
   const [filteredFeedbacks, setFilteredFeedbacks] = useState<FeedbackItem[]>([]);
   const [activeTab, setActiveTab] = useState<'feedback' | 'counseling'>('feedback');
 
-  // 학생 보고서 데이터 가져오기
-  useEffect(() => {
-    const fetchStudentReport = async () => {
-      if (!userInfo || !userInfo.userId) {
-        setError("로그인 정보를 확인할 수 없습니다.");
-        return;
-      }
+  // 피드백과 상담 데이터를 가져오는 함수
+  const fetchFeedbackData = useCallback(async () => {
+    if (!userInfo || !userInfo.userId) {
+      setError("로그인 정보를 확인할 수 없습니다.");
+      return;
+    }
 
-      setIsLoading(true);
-      setError(null);
+    setIsLoading(true);
+    setError(null);
 
-      try {
-        const data: StudentReportData = await getStudentReport(Number(userInfo.userId));
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+      const studentId = userInfo.userId;
+      
+      // 피드백 데이터만 가져오기 - 피드백 탭용
+      const feedbackResponse = await axios.get(`${API_BASE_URL}/feedback/${studentId}?grade=0`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      console.log('Feedback API Response:', feedbackResponse.data);
+      
+      if (feedbackResponse.status === 200) {
+        // API 응답 구조 문서화에 따른 정확한 데이터 추출
+        // 대응하는 데이터 구조에 맞춰 조정
+        let feedbackList = [];
+        if (feedbackResponse.data.data) {
+          // data 필드에 있는 경우
+          feedbackList = feedbackResponse.data.data.feedbacks || feedbackResponse.data.data;
+        } else if (feedbackResponse.data.feedbacks) {
+          // 직접 feedbacks 필드에 있는 경우
+          feedbackList = feedbackResponse.data.feedbacks;
+        } else {
+          // 그 외의 경우 전체 응답을 데이터로 간주
+          feedbackList = feedbackResponse.data;
+        }
         
-        // 피드백 데이터 추출
-        let feedbackData: FeedbackItem[] = [];
-        if (data.feedbackList?.feedbacks && data.feedbackList.feedbacks.length > 0) {
-          feedbackData = data.feedbackList.feedbacks;
-        } else if (data.data?.feedbackList && data.data.feedbackList.length > 0) {
-          feedbackData = data.data.feedbackList;
+        if (Array.isArray(feedbackList)) {
+          setFeedbacks(feedbackList);
+        } else {
+          console.error('피드백 데이터가 배열 형태가 아닙니다:', feedbackList);
+          setFeedbacks([]);
         }
-        setFeedbacks(feedbackData);
-
-        // 상담 데이터 추출
-        let counselData: CounselingItem[] = [];
-        if (data.counselList?.counsels && data.counselList.counsels.length > 0) {
-          counselData = data.counselList.counsels;
-        } else if (data.data?.counselList && data.data.counselList.length > 0) {
-          counselData = data.data.counselList;
-        }
-        setCounsels(counselData);
-
-      } catch (err) {
-        console.error("학생 보고서 데이터 조회 오류:", err);
-        setError("보고서 데이터를 불러오는데 실패했습니다.");
-      } finally {
-        setIsLoading(false);
       }
-    };
 
-    fetchStudentReport();
+      // 상담 데이터만 가져오기 - 상담 탭용
+      const counselResponse = await axios.get(`${API_BASE_URL}/counsel/${studentId}?grade=0`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      console.log('Counsel API Response:', counselResponse.data);
+      
+      if (counselResponse.status === 200) {
+        // API 응답 구조 문서화에 따른 정확한 데이터 추출
+        let counselList = [];
+        if (counselResponse.data.data) {
+          // data 필드에 있는 경우
+          counselList = counselResponse.data.data.counsels || counselResponse.data.data;
+        } else if (counselResponse.data.counsels) {
+          // 직접 counsels 필드에 있는 경우
+          counselList = counselResponse.data.counsels;
+        } else {
+          // 그 외의 경우 전체 응답을 데이터로 간주
+          counselList = counselResponse.data;
+        }
+        
+        if (Array.isArray(counselList)) {
+          setCounsels(counselList);
+        } else {
+          console.error('상담 데이터가 배열 형태가 아닙니다:', counselList);
+          setCounsels([]);
+        }
+      }
+
+    } catch (err) {
+      console.error("학생 데이터 조회 오류:", err);
+      message.error("데이터를 불러오는데 실패했습니다.");
+      setError("데이터를 불러오는데 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
   }, [userInfo]);
+
+  // 컴포넌트 마운트 시 데이터 로드
+  useEffect(() => {
+    fetchFeedbackData();
+  }, [fetchFeedbackData]);
 
   // 피드백 필터링
   useEffect(() => {
@@ -314,8 +363,17 @@ const StudentFeedbackPage: React.FC = () => {
     
     if (selectedYear) {
       filtered = filtered.filter((feedback) => {
-        const year = new Date(feedback.createdAt).getFullYear().toString();
-        return year === selectedYear;
+        try {
+          // feedback.createdAt가 존재하는지 확인
+          if (!feedback.createdAt) {
+            return false;
+          }
+          const year = new Date(feedback.createdAt).getFullYear().toString();
+          return year === selectedYear;
+        } catch (err) {
+          console.error('날짜 처리 오류:', err, feedback);
+          return false; // 오류 발생 시 해당 아이템 제외
+        }
       });
     }
     

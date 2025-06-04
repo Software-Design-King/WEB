@@ -3,7 +3,7 @@ import DashboardLayout from "../../../components/layout/DashboardLayout";
 import StudentSidebar from "../../../components/layout/StudentSidebar";
 import { ContentContainer } from "../../../components/dashboard/DashboardComponents.styles";
 import { useUserStore } from "../../../stores/userStore";
-import { Tabs, message, Badge, Modal, Button } from "antd";
+import { Tabs, message } from "antd";
 // getStudentDetail 함수 대신 axios 직접 호출
 // import { getStudentDetail } from "../../../apis/student";
 import styled from "styled-components";
