@@ -1,118 +1,70 @@
 import React, { useState, useEffect } from "react";
 import styled from "@emotion/styled";
+import {
+  Select,
+  Table,
+  Input,
+  Button,
+  Space,
+  Divider,
+  Card,
+  Avatar,
+  Spin,
+  Empty,
+  message,
+  Modal,
+  Form,
+  InputNumber,
+  Descriptions,
+  Tabs,
+  List,
+  Row,
+  Col,
+  Typography,
+  Tag,
+} from "antd";
+import {
+  UserOutlined,
+  EditOutlined,
+  SaveOutlined,
+  CloseOutlined,
+  FileSearchOutlined,
+} from "@ant-design/icons";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  ResponsiveContainer,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  Legend,
+} from "recharts";
+// 로컬 스타일 컴포넌트 사용
 import DashboardLayout from "../../../components/layout/DashboardLayout";
-import StudentSidebar from "../../../components/layout/StudentSidebar";
+import TeacherSidebar from "../../../components/layout/TeacherSidebar";
+// Subject 타입은 student API에서 import되어 있음
+
 import {
   DashboardCard,
   CardTitle,
   ContentContainer,
 } from "../../../components/dashboard/DashboardComponents.styles";
 import { colors } from "../../../components/common/Common.styles";
-import { getStudentScore, StudentScoreResponse } from "../../../apis/student";
 import { useUserStore } from "../../../stores/userStore";
+import {
+  getStudentList,
+  getStudentScore,
+  editStudentScore,
+  registerStudentScore,
+  Student,
+  StudentScoreResponse,
+  RegisterScoreRequest,
+  Subject,
+} from "../../../apis/student";
 
-// 페이지 컨테이너
+// 스타일 컴포넌트
 const PageContainer = styled.div`
-  padding: 1.5rem;
-  width: 100%;
-`;
-
-// 섹션 타이틀
-const StyledSubSectionTitle = styled.h2`
-  font-size: 1.2rem;
-  color: ${colors.text.primary};
-  margin: 1.5rem 0 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid ${colors.grey[300]};
-`;
-
-// 통계 아이템 컨테이너
-const StatItem = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  background: ${colors.grey[50]};
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  min-width: 120px;
-`;
-
-// 통계 라벨
-const StatLabel = styled.span`
-  font-size: 0.85rem;
-  color: ${colors.text.secondary};
-`;
-
-// 통계 값
-const StatValue = styled.span`
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: ${colors.text.primary};
-`;
-
-// 점수에 따른 색상 반환 함수
-const getScoreColor = (score: number | string) => {
-  if (score === "-") return "#999";
-
-  const numScore = typeof score === "string" ? parseFloat(score) : score;
-  if (isNaN(numScore)) return "#999";
-
-  if (numScore >= 90) return colors.success.main;
-  if (numScore >= 80) return colors.primary.main;
-  if (numScore >= 70) return colors.warning.main;
-  return colors.error.main;
-};
-
-// 성적 데이터 형식 타입
-type ScoresByGrade = Record<string, Record<string, SubjectScores[]>>;
-
-interface SubjectScores {
-  subject: string;
-  examType?: string;
-  score: number;
-  letterGrade: string;
-  grade: string;
-  semester: string;
-}
-
-interface TransformedScore {
-  grades: ScoresByGrade;
-}
-
-// 학생 성적 데이터 형식으로 변환하는 함수
-const transformScoreData = (scoreData: StudentScoreResponse | null): TransformedScore => {
-  if (!scoreData || !scoreData.data || !scoreData.data.scoresByGradeAndSemester) {
-    console.error("성적 데이터 형식이 올바르지 않습니다:", scoreData);
-    return { grades: {} };
-  }
-  
-  return { grades: scoreData.data.scoresByGradeAndSemester };
-};
-
-// 학기 옵션
-// 초기 학기 옵션 (API 응답 후 가용 학기로 업데이트됨)
-const defaultSemesterOptions = [
-  "1-1학기",
-  "1-2학기",
-  "2-1학기",
-  "2-2학기",
-  "3-1학기",
-  "3-2학기",
-];
-
-// 로딩 상태 컴포넌트
-const LoadingContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 200px;
-  font-size: 1.2rem;
-  color: ${colors.text.secondary};
-`;
-
-// 성적표 컨테이너
-const GradesContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 2rem;
@@ -120,398 +72,1059 @@ const GradesContainer = styled.div`
   width: 100%;
 `;
 
-const SemesterSelector = styled.div`
+const ControlsContainer = styled.div`
   display: flex;
-  align-items: center;
   gap: 1rem;
   margin-bottom: 1rem;
-`;
+  flex-wrap: wrap;
 
-const SemesterLabel = styled.label`
-  font-weight: 600;
-  color: ${colors.text.primary};
-`;
-
-const SemesterSelect = styled.select`
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  border: 1px solid ${colors.grey[300]};
-  background-color: white;
-  font-size: 1rem;
-  color: ${colors.text.primary};
-  cursor: pointer;
-
-  &:focus {
-    outline: none;
-    border-color: ${colors.primary.main};
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 0.5rem;
   }
 `;
 
-const GradesTable = styled.div`
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-`;
+const StyledSelect = styled(Select)`
+  min-width: 150px;
 
-const Table = styled.table`
-  width: 100%;
-  border-collapse: collapse;
-`;
-
-const TableHeader = styled.thead`
-  background-color: ${colors.grey[100]};
-`;
-
-const TableHeaderCell = styled.th`
-  padding: 1rem;
-  text-align: left;
-  font-weight: 600;
-  color: ${colors.text.primary};
-  border-bottom: 1px solid ${colors.grey[300]};
-`;
-
-const TableBody = styled.tbody``;
-
-const TableRow = styled.tr`
-  &:nth-of-type(even) {
-    background-color: ${colors.grey[50]};
-  }
-
-  &:hover {
-    background-color: ${colors.primary.light + "33"};
+  @media (max-width: 768px) {
+    width: 100%;
   }
 `;
 
-const TableCell = styled.td`
-  padding: 1rem;
-  border-bottom: 1px solid ${colors.grey[200]};
+const StyledSubSectionTitle = styled.h3`
+  font-size: 1.2rem;
+  font-weight: 600;
   color: ${colors.text.primary};
+  margin: 1.5rem 0 1rem;
 `;
 
-const GradeIndicator = styled.span<{ grade: string }>`
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-weight: 600;
-  background-color: ${(props) => {
-    if (props.grade.startsWith("A")) return colors.success.light;
-    if (props.grade.startsWith("B")) return colors.primary.light;
-    if (props.grade.startsWith("C")) return colors.warning.light;
-    return colors.error.light;
-  }};
-  color: ${(props) => {
-    if (props.grade.startsWith("A")) return colors.success.dark;
-    if (props.grade.startsWith("B")) return colors.primary.dark;
-    if (props.grade.startsWith("C")) return colors.warning.dark;
-    return colors.error.dark;
-  }};
+const GradeStatContainer = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const ChartContainer = styled.div`
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 1rem;
   height: 350px;
-  margin-top: 1rem;
 `;
 
-// 성적관리 페이지
-const StudentGradesPage = () => {
-  // 상태 관리
-  const [semesterOptions, setSemesterOptions] = useState(defaultSemesterOptions);
-  const [selectedSemester, setSelectedSemester] = useState(defaultSemesterOptions[0]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [scoreResponse, setScoreResponse] = useState<StudentScoreResponse | null>(null);
-  const [gradesData, setGradesData] = useState<any[]>([]); // 현재 선택된 학기의 성적 데이터
-  const [error, setError] = useState<string | null>(null);
-  
+const StatsContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+const StatItem = styled.div`
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+`;
+
+const StatLabel = styled.span`
+  font-size: 0.9rem;
+  color: ${colors.text.secondary};
+  margin-bottom: 0.5rem;
+`;
+
+const StatValue = styled.span`
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: ${colors.text.primary};
+`;
+
+// 학생 성적 데이터 형식으로 변환하는 함수
+const transformScoreData = (scoreData: any) => {
+  const processedData: any = {};
+  const allSubjects: string[] = [];
+  const allExamTypes: string[] = [];
+
+  // 성적 데이터가 없거나 형식이 다른 경우 처리
+  if (!scoreData || !scoreData.scoresByGradeAndSemester) {
+    console.error("성적 데이터 형식이 올바르지 않습니다:", scoreData);
+    return { processedData: {}, allSubjects: [], allExamTypes: [] };
+  }
+
+  // 과목 및 시험 유형 수집
+  Object.entries(scoreData.scoresByGradeAndSemester).forEach(
+    ([grade, semesters]) => {
+      Object.entries(semesters).forEach(([semester, data]: [string, any]) => {
+        if (data.subjects && Array.isArray(data.subjects)) {
+          data.subjects.forEach((subject: any) => {
+            if (!allSubjects.includes(subject.name)) {
+              allSubjects.push(subject.name);
+            }
+            if (!allExamTypes.includes(subject.examType)) {
+              allExamTypes.push(subject.examType);
+            }
+          });
+        }
+      });
+    }
+  );
+
+  // 학년/학기별 데이터 가공
+  Object.entries(scoreData.scoresByGradeAndSemester).forEach(
+    ([grade, semesters]) => {
+      processedData[grade] = {};
+
+      Object.entries(semesters).forEach(([semester, data]: [string, any]) => {
+        processedData[grade][semester] = {
+          totalScore: data.total || data.totalScore || 0,
+          averageScore: data.average || data.averageScore || 0,
+          wholeRank: data.wholeRank || "-",
+          classRank: data.classRank || "-",
+          subjects: data.subjects,
+        };
+      });
+    }
+  );
+
+  return {
+    processedData,
+    allSubjects,
+    allExamTypes,
+  };
+};
+
+const TeacherGradesPage: React.FC = () => {
+  // 학생 데이터 관리
+  const [students, setStudents] = useState<Student[]>([]);
+
   // Zustand에서 사용자 정보 가져오기
   const userInfo = useUserStore((state) => state.userInfo);
 
-  // 성적 데이터 불러오기
-  useEffect(() => {
-    const fetchGrades = async () => {
-      // 사용자 정보가 없으면 요청 중단
-      if (!userInfo || !userInfo.userId) {
-        setError("로그인 정보를 확인할 수 없습니다.");
-        return;
-      }
-      
-      setIsLoading(true);
-      setError(null);
+  const [selectedStudent, setSelectedStudent] = useState<number | null>(
+    userInfo?.userId
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-      try {
-        // 교사용과 동일한 API 사용: /score/{studentId}
-        const response = await getStudentScore(Number(userInfo.userId));
-        console.log("API 응답 데이터:", response); // 디버깅용 로그
-        setScoreResponse(response);
-        
-        // 사용 가능한 학기 목록 업데이트
-        const availableSemesters = getAvailableSemesters(response);
-        if (availableSemesters.length > 0) {
-          setSemesterOptions(availableSemesters);
-          setSelectedSemester(availableSemesters[0]); // 첫 번째 사용 가능한 학기 선택
+  // 성적 데이터 관리
+  const [scoreData, setScoreData] = useState<StudentScoreResponse | null>(null);
+  const [processedScoreData, setProcessedScoreData] = useState<Record<
+    string,
+    any
+  > | null>(null);
+  const [subjectList, setSubjectList] = useState<string[]>([]);
+  const [examTypeList, setExamTypeList] = useState<string[]>([]);
+
+  // 상세 모달 상태
+  const [isDetailModalVisible, setIsDetailModalVisible] =
+    useState<boolean>(false);
+  // 성적 등록 상태
+  const [semester, setSemester] = useState<number>(1);
+  const [newSubjects, setNewSubjects] = useState<
+    { name: string; score: number; examType: string }[]
+  >([{ name: "", score: 0, examType: "중간고사" }]);
+
+  // 학생 변경 시 성적 데이터 가져오기
+  useEffect(() => {
+    if (selectedStudent) {
+      const fetchStudentScore = async () => {
+        setIsLoading(true);
+        try {
+          const response = await getStudentScore(selectedStudent);
+          if (response.code === 20000) {
+            console.log("학생 성적 조회 성공:", response);
+            console.log("성적 데이터 구조:", response.data);
+
+            // 디버깅 - 자세한 데이터 구조 확인
+            if (response.data && response.data.scoresByGradeAndSemester) {
+              console.log(
+                "개선된 데이터 구조 확인 - scoresByGradeAndSemester 존재:",
+                !!response.data.scoresByGradeAndSemester
+              );
+              console.log(
+                "전체 데이터 구조:",
+                JSON.stringify(response.data, null, 2)
+              );
+
+              Object.entries(response.data.scoresByGradeAndSemester).forEach(
+                ([grade, semesters]) => {
+                  console.log(`학년: ${grade}, 학기 데이터:`, semesters);
+
+                  Object.entries(semesters).forEach(([semester, data]) => {
+                    console.log(
+                      `${grade}학년 ${semester}학기 과목 정보:`,
+                      data
+                    );
+
+                    if (data.subjects && Array.isArray(data.subjects)) {
+                      console.log(
+                        `${grade}학년 ${semester}학기 과목 개수:`,
+                        data.subjects.length
+                      );
+
+                      // examType 값 확인
+                      data.subjects.forEach((subject) => {
+                        console.log(
+                          `과목: ${subject.name}, 점수: ${subject.score}, 시험유형: ${subject.examType}`
+                        );
+                      });
+                    } else {
+                      console.log(
+                        `${grade}학년 ${semester}학기 과목 데이터 없음`
+                      );
+                    }
+                  });
+                }
+              );
+            } else {
+              console.log("성적 데이터 구조가 아예 없음");
+            }
+
+            // scoreData 상태 업데이트 - response.data를 저장
+            setScoreData(response.data);
+
+            // 성적 데이터 가공
+            try {
+              const { processedData, allSubjects, allExamTypes } =
+                transformScoreData(response.data);
+              setProcessedScoreData(processedData);
+              setSubjectList(allSubjects);
+              setExamTypeList(allExamTypes);
+              console.log("변환된 성적 데이터:", processedData);
+            } catch (transformError) {
+              console.error("성적 데이터 변환 중 오류:", transformError);
+              setError("성적 데이터 변환 중 오류가 발생했습니다.");
+            }
+          } else {
+            console.error("학생 성적 조회 실패:", response);
+            setError("학생 성적을 불러오는데 실패했습니다.");
+          }
+        } catch (err) {
+          console.error("학생 성적 조회 오류:", err);
+          setError(
+            "학생 성적을 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요."
+          );
+        } finally {
+          setIsLoading(false);
         }
-        
-        // 현재 선택된 학기에 맞는 데이터 추출
-        const currentSemesterData = extractCurrentSemesterData(response, availableSemesters[0] || selectedSemester);
-        setGradesData(currentSemesterData);
-      } catch (err) {
-        console.error("성적 정보 로드 오류:", err);
-        setError("성적 정보를 불러오는데 실패했습니다.");
-        setGradesData([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      };
 
-    fetchGrades();
-  }, [userInfo]); // selectedSemester 의존성 제거 - 학기 변경은 로컬에서 처리
-  
-  // 학기 변경 시 로컬 데이터에서 필터링
-  useEffect(() => {
-    if (scoreResponse) {
-      const filteredData = extractCurrentSemesterData(scoreResponse, selectedSemester);
-      setGradesData(filteredData);
+      fetchStudentScore();
     }
-  }, [selectedSemester, scoreResponse]);
+  }, [selectedStudent]);
 
-  // 레이더 차트 데이터 변환
-  const radarData = gradesData.map((item) => ({
-    subject: item.subject,
-    score: item.score,
-  }));
+  // 전체 과목 편집 핸들러 (시험 유형별 편집)
+  const handleEditAllScores = (
+    grade: string,
+    semester: string,
+    examType: string
+  ) => {
+    if (!scoreData?.scoresByGradeAndSemester) {
+      message.error("성적 데이터가 없습니다");
+      return;
+    }
 
-  // 학기 변경 핸들러
-  const handleSemesterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedSemester(e.target.value);
-  };
+    // 선택한 학년/학기/시험유형에 해당하는 과목 데이터 추출
+    const subjects: Array<{ name: string; score: number }> = [];
 
-  // 학년/반/번호 정보 구성
-  const getUserInfoText = () => {
-    if (!userInfo) return "";
-    
-    // roleInfo("1학년 2반")에서 학년, 반 정보 추출
-    const roleInfoParts = userInfo.roleInfo
-      ? userInfo.roleInfo.match(/(\d+)학년\s*(\d+)반/)
-      : null;
-      
-    const grade = roleInfoParts ? roleInfoParts[1] : "";
-    const classNum = roleInfoParts ? roleInfoParts[2] : "";
-    
-    return `${grade}학년 ${classNum}반 ${userInfo.number || ""}번`;
-  };
-  
-  // API 응답에서 사용 가능한 학기 목록 추출하는 함수
-  const getAvailableSemesters = (scoreData: StudentScoreResponse | null): string[] => {
-    if (!scoreData || !scoreData.data || !scoreData.data.scoresByGradeAndSemester) return [];
-    
-    const semesters: string[] = [];
-    const grades = Object.keys(scoreData.data.scoresByGradeAndSemester);
-    
-    grades.forEach(grade => {
-      const semestersInGrade = Object.keys(scoreData.data.scoresByGradeAndSemester[grade]);
-      semestersInGrade.forEach(semester => {
-        semesters.push(`${grade}-${semester}학기`);
+    const semesterData = scoreData.scoresByGradeAndSemester[grade]?.[semester];
+    if (semesterData?.subjects && Array.isArray(semesterData.subjects)) {
+      // 학기 데이터에서 모든 과목 추출
+      const subjectMap = new Map<string, number>();
+
+      // 선택한 시험 유형의 데이터만 추출
+      semesterData.subjects.forEach((subjectData: any) => {
+        if (subjectData.examType === examType) {
+          subjectMap.set(
+            subjectData.name,
+            parseFloat(subjectData.score.toString())
+          );
+        }
       });
-    });
-    
-    return semesters;
+
+      // 추출한 과목 데이터 준비
+      for (const [name, score] of subjectMap.entries()) {
+        subjects.push({ name, score });
+      }
+
+      // 과목이 없는 경우, 기본 과목 리스트 추가
+      if (subjects.length === 0) {
+        const defaultSubjects = ["국어", "영어", "수학", "과학", "사회"];
+        defaultSubjects.forEach((subject) => {
+          subjects.push({ name: subject, score: 0 });
+        });
+      }
+    }
   };
 
-  // API 응답에서 현재 학기 성적 데이터 추출하는 함수
-  const extractCurrentSemesterData = (scoreData: StudentScoreResponse | null, semester: string) => {
-    if (!scoreData || !scoreData.data || !scoreData.data.scoresByGradeAndSemester) {
-      console.log("유효한 성적 데이터가 없습니다.");
-      return [];
-    }
-    
-    // 학기 문자열에서 학년과 학기 추출 (예: "1-1학기" -> grade="1", semesterNum="1")
-    const semesterMatch = semester.match(/(\d+)-(\d+)학기/);
-    if (!semesterMatch) {
-      console.log("학기 형식이 올바르지 않습니다.", semester);
-      return [];
-    }
-    
-    const grade = semesterMatch[1];
-    const semesterNum = semesterMatch[2];
-    
-    console.log(`추출 시도: 학년=${grade}, 학기=${semesterNum}`); // 디버깅용 로그
-    
-    // API 응답 데이터에서 해당 학년/학기 데이터 추출
-    const gradeData = scoreData.data.scoresByGradeAndSemester[grade];
-    if (!gradeData) {
-      console.log(`${grade}학년 데이터가 없습니다.`);
-      return [];
-    }
-    
-    const semesterData = gradeData[semesterNum];
-    if (!semesterData) {
-      console.log(`${grade}학년 ${semesterNum}학기 데이터가 없습니다.`);
-      return [];
-    }
-    
-    console.log("학기 데이터 찾음:", semesterData); // 디버깅용 로그
-    
-    // 과목별 성적을 GradeData 형태로 변환
-    return semesterData.subjects.map((subject, index) => ({
-      id: String(index),
-      subject: subject.name,
-      score: subject.score,
-      grade: getLetterGrade(subject.score),
-      rank: semesterData.classRank + "/" + (semesterData.wholeRank || 30),
-      semester: `${grade}-${semesterNum}학기`,
-      studentId: String(userInfo?.userId || ""),
-      examType: subject.examType
-    }));
-  };
-  
-  // 점수를 기반으로 등급 계산
-  const getLetterGrade = (score: number): string => {
-    if (score >= 90) return "A";
-    if (score >= 80) return "B";
-    if (score >= 70) return "C";
-    if (score >= 60) return "D";
-    return "F";
+  // 점수에 따른 색상 반환 함수
+  const getScoreColor = (score: string | number) => {
+    if (score === "-") return "#999";
+
+    const numScore = typeof score === "string" ? parseFloat(score) : score;
+    if (isNaN(numScore)) return "#999";
+
+    if (numScore >= 90) return colors.success.main;
+    if (numScore >= 80) return colors.primary.main;
+    if (numScore >= 70) return colors.warning.main;
+    return colors.error.main;
   };
 
   return (
     <DashboardLayout
-      userName={userInfo?.name || ""}
-      userRole="학생"
-      userInfo={getUserInfoText()}
+      userName={userInfo?.name || "교사"}
+      userRole={"STUDENT" === userInfo?.userType ? "학생" : "관리자"}
+      userInfo={userInfo?.roleInfo || ""}
       notificationCount={0}
     >
-      <StudentSidebar {...{ isCollapsed: false }} />
+      <TeacherSidebar isCollapsed={false} />
 
       <ContentContainer>
         <PageContainer>
           <DashboardCard>
-            <CardTitle>내 성적 조회</CardTitle>
+            <CardTitle>학생 성적 관리</CardTitle>
 
             {isLoading ? (
-              <div style={{ display: "flex", justifyContent: "center", padding: "2rem" }}>
-                <LoadingContainer>성적 정보를 불러오는 중입니다...</LoadingContainer>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  padding: "2rem",
+                }}
+              >
+                <Spin size="large" tip="데이터를 불러오는 중..." />
               </div>
             ) : error ? (
-              <div style={{ padding: "2rem", textAlign: "center", color: "red" }}>
+              <div
+                style={{ padding: "2rem", textAlign: "center", color: "red" }}
+              >
                 {error}
               </div>
-            ) : !scoreResponse ? (
-              <div style={{ padding: "2rem 0", textAlign: "center" }}>
-                성적 데이터가 없습니다.
-              </div>
             ) : (
-              <div>
-                {/* 성적 요약 섹션 */}
-                <StyledSubSectionTitle>성적 요약</StyledSubSectionTitle>
+              <>
+                {!selectedStudent ? (
+                  <div style={{ padding: "2rem 0", textAlign: "center" }}>
+                    학생을 선택해주세요.
+                  </div>
+                ) : !processedScoreData ? (
+                  <div style={{ padding: "2rem 0", textAlign: "center" }}>
+                    성적 데이터를 불러오는 중입니다...
+                  </div>
+                ) : (
+                  <div>
+                    {/* 성적 요약 섹션 */}
+                    <StyledSubSectionTitle>성적 요약</StyledSubSectionTitle>
 
-                {/* 학년/학기별 요약 정보 */}
-                <div style={{ marginBottom: "2rem" }}>
-                  {Object.entries(transformScoreData(scoreResponse)).map(
-                    ([grade, semesters]) => {
-                      return Object.entries(semesters as any).map(
-                        ([semester, data]) => {
+                    {/* 학년/학기별 요약 정보 */}
+                    <div style={{ marginBottom: "2rem" }}>
+                      {Object.entries(processedScoreData).map(
+                        ([grade, semesters]) => {
+                          return Object.entries(semesters as any).map(
+                            ([semester, data]) => {
+                              return (
+                                <div
+                                  key={`${grade}-${semester}`}
+                                  style={{
+                                    background: "white",
+                                    padding: "1rem",
+                                    borderRadius: "8px",
+                                    marginBottom: "1rem",
+                                    boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
+                                  }}
+                                >
+                                  <h3
+                                    style={{ margin: "0 0 1rem 0" }}
+                                  >{`${grade}학년 ${semester}학기 성적`}</h3>
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      gap: "2rem",
+                                      flexWrap: "wrap",
+                                    }}
+                                  >
+                                    <StatItem>
+                                      <StatLabel>평균 점수</StatLabel>
+                                      <StatValue>
+                                        {(data as any).averageScore?.toFixed(
+                                          1
+                                        ) || "0"}
+                                      </StatValue>
+                                    </StatItem>
+                                    <StatItem>
+                                      <StatLabel>반 석차</StatLabel>
+                                      <StatValue>
+                                        {(data as any).classRank || "-"}등
+                                      </StatValue>
+                                    </StatItem>
+                                    <StatItem>
+                                      <StatLabel>전체 석차</StatLabel>
+                                      <StatValue>
+                                        {(data as any).wholeRank || "-"}등
+                                      </StatValue>
+                                    </StatItem>
+                                    <StatItem>
+                                      <StatLabel>총점</StatLabel>
+                                      <StatValue>
+                                        {(data as any).totalScore || "-"}점
+                                      </StatValue>
+                                    </StatItem>
+                                  </div>
+                                </div>
+                              );
+                            }
+                          );
+                        }
+                      )}
+                    </div>
+
+                    {/* 학기별/시험유형별 성적 테이블 */}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "15px",
+                      }}
+                    >
+                      <StyledSubSectionTitle style={{ margin: 0 }}>
+                        학기별 시험 성적
+                      </StyledSubSectionTitle>
+
+                      {/* 점수 색상 범례 */}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          background: "#f9f9f9",
+                          padding: "6px 10px",
+                          borderRadius: "5px",
+                          fontSize: "0.9em",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: colors.success.main,
+                            fontWeight: "bold",
+                            marginRight: "8px",
+                          }}
+                        >
+                          ● 90점 이상
+                        </span>
+                        <span
+                          style={{
+                            color: colors.primary.main,
+                            fontWeight: "bold",
+                            marginRight: "8px",
+                          }}
+                        >
+                          ● 80-89점
+                        </span>
+                        <span
+                          style={{
+                            color: colors.warning.main,
+                            fontWeight: "bold",
+                            marginRight: "8px",
+                          }}
+                        >
+                          ● 70-79점
+                        </span>
+                        <span
+                          style={{
+                            color: colors.error.main,
+                            fontWeight: "bold",
+                          }}
+                        >
+                          ● 70점 미만
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 학년/학기별로 구분하여 테이블 표시 */}
+                    {(() => {
+                      // 데이터가 없는 경우 처리
+                      if (!processedScoreData) return null;
+                      // gradeSemesterGroups 정의
+                      const gradeSemesterGroups: Record<
+                        string,
+                        {
+                          grade: string;
+                          semester: string;
+                          title: string;
+                          subjects: Record<
+                            string,
+                            Record<string, string | number>
+                          >;
+                        }
+                      > = {};
+
+                      // 학년/학기별 데이터 분류
+                      Object.entries(processedScoreData).forEach(
+                        ([grade, semesters]) => {
+                          Object.entries(
+                            semesters as Record<string, any>
+                          ).forEach(([semester, data]) => {
+                            const key = `${grade}_${semester}`;
+                            if (!gradeSemesterGroups[key]) {
+                              gradeSemesterGroups[key] = {
+                                grade,
+                                semester,
+                                title: `${grade}학년 ${semester}학기`,
+                                subjects: {},
+                              };
+                            }
+
+                            // 과목별로 중간/기말고사 점수 분류
+                            if (data.subjects && Array.isArray(data.subjects)) {
+                              data.subjects.forEach((subject: any) => {
+                                if (
+                                  !gradeSemesterGroups[key].subjects[
+                                    subject.name
+                                  ]
+                                ) {
+                                  gradeSemesterGroups[key].subjects[
+                                    subject.name
+                                  ] = {
+                                    중간고사: "-",
+                                    기말고사: "-",
+                                  };
+                                }
+
+                                // 시험 유형에 따라 점수 저장
+                                if (
+                                  subject.examType === "중간고사" ||
+                                  subject.examType === "기말고사"
+                                ) {
+                                  gradeSemesterGroups[key].subjects[
+                                    subject.name
+                                  ][subject.examType] = subject.score;
+                                }
+                              });
+                            }
+                          });
+                        }
+                      );
+
+                      // 학기별로 테이블 반환
+                      return Object.values(gradeSemesterGroups).map(
+                        (gradeData, gradeIndex) => {
+                          // 테이블용 데이터 변환
+                          const tableData = Object.entries(
+                            gradeData.subjects
+                          ).map(([subjectName, scores], index) => {
+                            // 성적 변화율 계산
+                            let changeRate = "-";
+                            if (
+                              scores["중간고사"] !== "-" &&
+                              scores["기말고사"] !== "-"
+                            ) {
+                              const midtermScore = parseFloat(
+                                scores["중간고사"].toString()
+                              );
+                              const finalScore = parseFloat(
+                                scores["기말고사"].toString()
+                              );
+                              if (midtermScore > 0) {
+                                const rate =
+                                  ((finalScore - midtermScore) / midtermScore) *
+                                  100;
+                                changeRate = rate.toFixed(1) + "%";
+                              }
+                            }
+
+                            // 상승/하락 여부에 따라 표시할 색상 결정
+                            let changeRateColor = "inherit";
+                            if (changeRate !== "-") {
+                              const rateValue = parseFloat(changeRate);
+                              if (rateValue > 0) changeRateColor = "green";
+                              else if (rateValue < 0) changeRateColor = "red";
+                            }
+
+                            // 평균 계산
+                            const average =
+                              scores["중간고사"] !== "-" &&
+                              scores["기말고사"] !== "-"
+                                ? (
+                                    (parseFloat(scores["중간고사"].toString()) +
+                                      parseFloat(
+                                        scores["기말고사"].toString()
+                                      )) /
+                                    2
+                                  ).toFixed(1)
+                                : "-";
+
+                            return {
+                              key: `${gradeData.grade}_${gradeData.semester}_${subjectName}_${index}`,
+                              subject: subjectName,
+                              midterm: scores["중간고사"],
+                              final: scores["기말고사"],
+                              changeRate,
+                              changeRateColor,
+                              average,
+                            };
+                          });
+
                           return (
                             <div
-                              key={`${grade}-${semester}`}
-                              style={{
-                                background: "white",
-                                padding: "1rem",
-                                borderRadius: "8px",
-                                marginBottom: "1rem",
-                                boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
-                              }}
+                              key={`grade_semester_${gradeIndex}`}
+                              style={{ marginBottom: "2rem" }}
                             >
-                              <h3 style={{ margin: "0 0 1rem 0" }}>
-                                {`${grade}학년 ${semester}학기 성적`}
-                              </h3>
                               <div
                                 style={{
                                   display: "flex",
-                                  gap: "2rem",
-                                  flexWrap: "wrap",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  marginBottom: "10px",
                                 }}
                               >
-                                <StatItem>
-                                  <StatLabel>평균 점수</StatLabel>
-                                  <StatValue>
-                                    {(data as any).averageScore?.toFixed(1) || "0"}
-                                  </StatValue>
-                                </StatItem>
-                                <StatItem>
-                                  <StatLabel>반 석차</StatLabel>
-                                  <StatValue>{(data as any).classRank || "-"}등</StatValue>
-                                </StatItem>
-                                <StatItem>
-                                  <StatLabel>전체 석차</StatLabel>
-                                  <StatValue>{(data as any).wholeRank || "-"}등</StatValue>
-                                </StatItem>
-                                <StatItem>
-                                  <StatLabel>총점</StatLabel>
-                                  <StatValue>{(data as any).totalScore || "-"}점</StatValue>
-                                </StatItem>
+                                <h3
+                                  style={{
+                                    fontSize: "16px",
+                                    fontWeight: "bold",
+                                    margin: "0",
+                                  }}
+                                >
+                                  {gradeData.title}
+                                </h3>
+                                <div>
+                                  <Button
+                                    type="primary"
+                                    icon={<EditOutlined />}
+                                    onClick={() =>
+                                      handleEditAllScores(
+                                        gradeData.grade,
+                                        gradeData.semester,
+                                        "중간고사"
+                                      )
+                                    }
+                                    size="small"
+                                    style={{ marginRight: "8px" }}
+                                  >
+                                    중간고사 편집
+                                  </Button>
+                                  <Button
+                                    type="primary"
+                                    icon={<EditOutlined />}
+                                    onClick={() =>
+                                      handleEditAllScores(
+                                        gradeData.grade,
+                                        gradeData.semester,
+                                        "기말고사"
+                                      )
+                                    }
+                                    size="small"
+                                  >
+                                    기말고사 편집
+                                  </Button>
+                                </div>
                               </div>
+                              <Table
+                                dataSource={tableData}
+                                columns={[
+                                  {
+                                    title: "과목명",
+                                    dataIndex: "subject",
+                                    key: "subject",
+                                    width: "20%",
+                                  },
+                                  {
+                                    title: "중간고사",
+                                    dataIndex: "midterm",
+                                    key: "midterm",
+                                    width: "20%",
+                                    render: (score) => (
+                                      <span
+                                        style={{ color: getScoreColor(score) }}
+                                      >
+                                        {score}
+                                      </span>
+                                    ),
+                                  },
+                                  {
+                                    title: "기말고사",
+                                    dataIndex: "final",
+                                    key: "final",
+                                    width: "25%",
+                                    render: (score, record) => {
+                                      // 점수 변화 계산
+                                      let scoreChange = null;
+                                      if (
+                                        record.midterm !== "-" &&
+                                        record.final !== "-"
+                                      ) {
+                                        const midtermScore = parseFloat(
+                                          record.midterm.toString()
+                                        );
+                                        const finalScore = parseFloat(
+                                          record.final.toString()
+                                        );
+                                        scoreChange = finalScore - midtermScore;
+                                      }
+
+                                      return (
+                                        <div>
+                                          <span
+                                            style={{
+                                              color: getScoreColor(score),
+                                            }}
+                                          >
+                                            {score}
+                                          </span>
+                                          {scoreChange !== null && (
+                                            <span
+                                              style={{
+                                                marginLeft: "8px",
+                                                color:
+                                                  scoreChange > 0
+                                                    ? "green"
+                                                    : scoreChange < 0
+                                                    ? "red"
+                                                    : "gray",
+                                                fontWeight: "bold",
+                                                fontSize: "0.9em",
+                                              }}
+                                            >
+                                              (
+                                              {scoreChange > 0
+                                                ? "↑"
+                                                : scoreChange < 0
+                                                ? "↓"
+                                                : ""}{" "}
+                                              {Math.abs(scoreChange)})
+                                            </span>
+                                          )}
+                                        </div>
+                                      );
+                                    },
+                                  },
+                                  {
+                                    title: "평균",
+                                    dataIndex: "average",
+                                    key: "average",
+                                    width: "15%",
+                                    render: (score) => (
+                                      <span
+                                        style={{
+                                          color: getScoreColor(score),
+                                          fontWeight: "bold",
+                                        }}
+                                      >
+                                        {score}
+                                      </span>
+                                    ),
+                                  },
+                                ]}
+                                pagination={false}
+                                locale={{
+                                  emptyText: <div>성적 데이터가 없습니다.</div>,
+                                }}
+                                bordered
+                                size="small"
+                              />
                             </div>
                           );
                         }
                       );
-                    }
-                  )}
-                </div>
+                    })()}
 
-                {/* 학기별/시험유형별 성적 테이블 */}
-                <StyledSubSectionTitle>학기별 시험 성적</StyledSubSectionTitle>
-                
-                {Object.entries(transformScoreData(scoreResponse)).map(
-                  ([grade, semesters]) => {
-                    return Object.entries(semesters as any).map(
-                      ([semester, data]) => {
-                        return (
-                          <div key={`table-${grade}-${semester}`} style={{ marginBottom: "2rem" }}>
-                            <h4 style={{ margin: "1rem 0" }}>{`${grade}학년 ${semester}학기`}</h4>
-                            <GradesTable>
-                              <Table>
-                                <TableHeader>
-                                  <tr>
-                                    <TableHeaderCell>과목</TableHeaderCell>
-                                    <TableHeaderCell>시험 유형</TableHeaderCell>
-                                    <TableHeaderCell>점수</TableHeaderCell>
-                                    <TableHeaderCell>등급</TableHeaderCell>
-                                  </tr>
-                                </TableHeader>
-                                <TableBody>
-                                  {(data as any).subjects.map((subject: any, idx: number) => (
-                                    <TableRow key={`${grade}-${semester}-${idx}`}>
-                                      <TableCell>{subject.name}</TableCell>
-                                      <TableCell>{subject.examType}</TableCell>
-                                      <TableCell style={{ 
-                                        color: getScoreColor(subject.score),
-                                        fontWeight: 'bold'
-                                      }}>
-                                        {subject.score}
-                                      </TableCell>
-                                      <TableCell>
-                                        <GradeIndicator grade={getLetterGrade(subject.score)}>
-                                          {getLetterGrade(subject.score)}
-                                        </GradeIndicator>
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            </GradesTable>
+                    {/* 그래프 보여주기 */}
+                    <StyledSubSectionTitle style={{ marginTop: "2rem" }}>
+                      과목별 점수 분석
+                    </StyledSubSectionTitle>
+                    <GradeStatContainer>
+                      <ChartContainer>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <RadarChart
+                            outerRadius={90}
+                            data={subjectList.map((subject) => {
+                              // 각 과목의 중간고사와 기말고사 점수 추출
+                              let midtermScore = 0;
+                              let finalScore = 0;
+                              let hasMidterm = false;
+                              let hasFinal = false;
+
+                              // 실제 점수 데이터를 테이블에서 추출
+                              if (scoreData?.scoresByGradeAndSemester) {
+                                Object.entries(
+                                  scoreData.scoresByGradeAndSemester
+                                ).forEach(([_, semesters]) => {
+                                  Object.entries(
+                                    semesters as Record<string, any>
+                                  ).forEach(([_, data]) => {
+                                    // 데이터가 있는지 확인
+                                    if (data.subjects) {
+                                      if (Array.isArray(data.subjects)) {
+                                        // 배열 형태의 데이터 처리
+                                        data.subjects.forEach(
+                                          (subjectData: any) => {
+                                            if (subjectData.name === subject) {
+                                              // 시험 유형에 따라 점수 분류
+                                              if (
+                                                subjectData.examType ===
+                                                "중간고사"
+                                              ) {
+                                                midtermScore = parseFloat(
+                                                  subjectData.score.toString()
+                                                );
+                                                hasMidterm = true;
+                                              } else if (
+                                                subjectData.examType ===
+                                                "기말고사"
+                                              ) {
+                                                finalScore = parseFloat(
+                                                  subjectData.score.toString()
+                                                );
+                                                hasFinal = true;
+                                              }
+                                            }
+                                          }
+                                        );
+                                      } else {
+                                        // 객체 형태의 데이터 처리
+                                        Object.entries(data.subjects).forEach(
+                                          ([subjectName, subjectData]) => {
+                                            if (subjectName === subject) {
+                                              const examType = (
+                                                subjectData as any
+                                              ).examType;
+                                              // 시험 유형에 따라 점수 분류
+                                              if (examType === "중간고사") {
+                                                midtermScore = parseFloat(
+                                                  (
+                                                    subjectData as any
+                                                  ).score.toString()
+                                                );
+                                                hasMidterm = true;
+                                              } else if (
+                                                examType === "기말고사"
+                                              ) {
+                                                finalScore = parseFloat(
+                                                  (
+                                                    subjectData as any
+                                                  ).score.toString()
+                                                );
+                                                hasFinal = true;
+                                              }
+                                            }
+                                          }
+                                        );
+                                      }
+                                    }
+                                  });
+                                });
+                              }
+
+                              // 평균 계산
+                              const avgScore =
+                                hasMidterm && hasFinal
+                                  ? (midtermScore + finalScore) / 2
+                                  : hasMidterm
+                                  ? midtermScore
+                                  : hasFinal
+                                  ? finalScore
+                                  : 0;
+
+                              return {
+                                subject,
+                                midterm: hasMidterm ? midtermScore : 0,
+                                final: hasFinal ? finalScore : 0,
+                                average: avgScore,
+                                fullMark: 100,
+                              };
+                            })}
+                          >
+                            <PolarGrid />
+                            <PolarAngleAxis dataKey="subject" />
+                            <PolarRadiusAxis angle={30} domain={[0, 100]} />
+                            <Radar
+                              name="중간고사"
+                              dataKey="midterm"
+                              stroke="#8884d8"
+                              fill="#8884d8"
+                              fillOpacity={0.6}
+                            />
+                            <Radar
+                              name="기말고사"
+                              dataKey="final"
+                              stroke="#82ca9d"
+                              fill="#82ca9d"
+                              fillOpacity={0.6}
+                            />
+                            <Legend
+                              layout="horizontal"
+                              verticalAlign="bottom"
+                              align="center"
+                            />
+                          </RadarChart>
+                        </ResponsiveContainer>
+                      </ChartContainer>
+
+                      <StatsContainer>
+                        {examTypeList.map((examType) => {
+                          // 시험 유형별 평균 계산
+                          let totalScore = 0;
+                          let count = 0;
+
+                          // 원본 데이터(scoreData)에서 직접 추출
+                          if (scoreData?.scoresByGradeAndSemester) {
+                            Object.entries(
+                              scoreData.scoresByGradeAndSemester
+                            ).forEach(([_, semesters]) => {
+                              Object.entries(
+                                semesters as Record<string, any>
+                              ).forEach(([_, data]) => {
+                                // 데이터가 있는지 확인
+                                if (data.subjects) {
+                                  if (Array.isArray(data.subjects)) {
+                                    // 배열 형태의 데이터 처리
+                                    data.subjects.forEach(
+                                      (subjectData: any) => {
+                                        if (subjectData.examType === examType) {
+                                          const score = parseFloat(
+                                            subjectData.score.toString()
+                                          );
+                                          if (!isNaN(score)) {
+                                            totalScore += score;
+                                            count++;
+                                          }
+                                        }
+                                      }
+                                    );
+                                  } else {
+                                    // 객체 형태의 데이터 처리
+                                    Object.entries(data.subjects).forEach(
+                                      ([subjectName, subjectData]) => {
+                                        if (subjectData.examType === examType) {
+                                          const score = parseFloat(
+                                            subjectData.score.toString()
+                                          );
+                                          if (!isNaN(score)) {
+                                            totalScore += score;
+                                            count++;
+                                          }
+                                        }
+                                      }
+                                    );
+                                  }
+                                }
+                              });
+                            });
+                          }
+
+                          return (
+                            <StatItem key={examType}>
+                              <StatLabel>{examType} 평균</StatLabel>
+                              <StatValue>
+                                {count > 0
+                                  ? (totalScore / count).toFixed(1)
+                                  : "-"}
+                              </StatValue>
+                            </StatItem>
+                          );
+                        })}
+                      </StatsContainer>
+                    </GradeStatContainer>
+                  </div>
+                )}
+              </>
+            )}
+          </DashboardCard>
+
+          {/* 상세 성적 모달 */}
+          <Modal
+            title="학생 상세"
+            open={isDetailModalVisible}
+            onCancel={() => setIsDetailModalVisible(false)}
+            footer={null}
+            width={1000}
+          >
+            {processedScoreData && (
+              <div>
+                <h3>학년/학기별 성적 상세 정보</h3>
+                <p>
+                  선택한 학생의 모든 학년/학기별 상세 성적 정보를 확인할 수
+                  있습니다.
+                </p>
+
+                {Object.entries(processedScoreData).map(
+                  ([grade, semesters]) => (
+                    <div key={grade} style={{ marginBottom: "30px" }}>
+                      <h4>{grade}학년</h4>
+
+                      {Object.entries(semesters as any).map(
+                        ([semester, data]) => (
+                          <div
+                            key={`${grade}-${semester}`}
+                            style={{ marginBottom: "20px" }}
+                          >
+                            <h5>{semester}학기</h5>
+
+                            <div style={{ marginBottom: "10px" }}>
+                              <span>
+                                <strong>총점:</strong>{" "}
+                                {(data as any).totalScore}
+                              </span>
+                              <span style={{ marginLeft: "20px" }}>
+                                <strong>평균:</strong>{" "}
+                                {Number((data as any).averageScore).toFixed(1)}
+                              </span>
+                              <span style={{ marginLeft: "20px" }}>
+                                <strong>전체순위:</strong>{" "}
+                                {(data as any).wholeRank}등
+                              </span>
+                              <span style={{ marginLeft: "20px" }}>
+                                <strong>반내순위:</strong>{" "}
+                                {(data as any).classRank}등
+                              </span>
+                            </div>
+
+                            <Table
+                              dataSource={Object.entries(
+                                (data as any).subjects
+                              ).map(([name, subject], index) => ({
+                                key: index,
+                                name,
+                                score: (subject as any).score,
+                                examType: (subject as any).examType,
+                              }))}
+                              columns={[
+                                {
+                                  title: "과목명",
+                                  dataIndex: "name",
+                                  key: "name",
+                                },
+                                {
+                                  title: "시험유형",
+                                  dataIndex: "examType",
+                                  key: "examType",
+                                },
+                                {
+                                  title: "점수",
+                                  dataIndex: "score",
+                                  key: "score",
+                                },
+                              ]}
+                              pagination={false}
+                              size="small"
+                            />
                           </div>
-                        );
-                      }
-                    );
-                  }
+                        )
+                      )}
+                    </div>
+                  )
                 )}
               </div>
             )}
-          </DashboardCard>
+          </Modal>
         </PageContainer>
       </ContentContainer>
     </DashboardLayout>
   );
 };
 
-export default StudentGradesPage;
+export default TeacherGradesPage;
