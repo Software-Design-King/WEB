@@ -42,7 +42,7 @@ import {
 } from "recharts";
 // 로컬 스타일 컴포넌트 사용
 import DashboardLayout from "../../../components/layout/DashboardLayout";
-import TeacherSidebar from "../../../components/layout/TeacherSidebar";
+import StudentSidebar from "../../../components/layout/StudentSidebar";
 // Subject 타입은 student API에서 import되어 있음
 
 import {
@@ -383,7 +383,7 @@ const TeacherGradesPage: React.FC = () => {
       userInfo={userInfo?.roleInfo || ""}
       notificationCount={0}
     >
-      <TeacherSidebar isCollapsed={false} />
+      <StudentSidebar isCollapsed={false} />
 
       <ContentContainer>
         <PageContainer>
