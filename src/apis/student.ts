@@ -288,20 +288,43 @@ export const enrollStudents = async (
       // birthDate 변환
       if (processed.birthDate) {
         if (typeof processed.birthDate === "number") {
-          // 숫자(예: 20200101)가 들어온 경우 yyyy-mm-dd 문자열로 변환
-          const birthNum = processed.birthDate;
-          const birthStr = birthNum.toString();
-          if (birthStr.length === 8) {
-            // 8자리: yyyymmdd
-            processed.birthDate = `${birthStr.slice(0,4)}-${birthStr.slice(4,6)}-${birthStr.slice(6,8)}`;
+          // 숫자 형태의 birthDate를 처리
+          const birthDateNum = processed.birthDate as number;
+          if (birthDateNum > 0 && birthDateNum < 100000) {
+            // Excel 날짜 형식(일련번호)으로 추정 (예: 40313, 39550)
+            const excelDate = new Date((birthDateNum - 25569) * 86400 * 1000);
+            processed.birthDate = excelDate.toISOString().split("T")[0];
           } else {
-            // 그 외는 Date로 변환 시도
-            processed.birthDate = new Date(birthNum).toISOString().split("T")[0];
+            const birthStr = birthDateNum.toString();
+            if (birthStr.length === 8) {
+              // YYYYMMDD 형식 (예: 20200101)
+              processed.birthDate = `${birthStr.slice(0,4)}-${birthStr.slice(4,6)}-${birthStr.slice(6,8)}`;
+            } else {
+              // 그 외는 일반 타임스탬프로 가정하고 Date로 변환 시도
+              processed.birthDate = new Date(birthDateNum).toISOString().split("T")[0];
+            }
           }
+        } else if (typeof processed.birthDate === "string") {
+          if (/^\d+$/.test(processed.birthDate)) {
+            // 문자열이지만 숫자만 포함된 경우
+            const birthNum = parseInt(processed.birthDate);
+            
+            if (processed.birthDate.length === 8) {
+              // 8자리 숫자 (YYYYMMDD) 형식
+              processed.birthDate = `${processed.birthDate.slice(0,4)}-${processed.birthDate.slice(4,6)}-${processed.birthDate.slice(6,8)}`;
+            } else if (birthNum > 0 && birthNum < 100000) {
+              // Excel 날짜 형식으로 추정 (일련번호)
+              const excelDate = new Date((birthNum - 25569) * 86400 * 1000);
+              processed.birthDate = excelDate.toISOString().split("T")[0];
+            } else {
+              // 일반 타임스탬프로 가정
+              processed.birthDate = new Date(birthNum).toISOString().split("T")[0];
+            }
+          }
+          // birthDate가 이미 yyyy-MM-dd 형식이면 변경 불필요
         } else if (processed.birthDate instanceof Date) {
           processed.birthDate = processed.birthDate.toISOString().split("T")[0];
         }
-        // 이미 yyyy-mm-dd 문자열이면 그대로 둠
       }
       // birthDate가 null/빈값이면 필드 제거
       if (!processed.birthDate) {
@@ -313,7 +336,15 @@ export const enrollStudents = async (
           delete processed[key];
         }
       });
-      return { ...processed, enrollCode: null };
+      // 최종적으로 필요한 필드만 추출
+const allowedKeys = [
+  'userName', 'grade', 'classNum', 'number', 'userType', 'age', 'address',
+  'gender', 'birthDate', 'contact', 'parentContact'
+];
+const filtered = Object.fromEntries(
+  Object.entries(processed).filter(([key]) => allowedKeys.includes(key))
+);
+return filtered;
 
     });
 
