@@ -123,12 +123,7 @@ const StudentDashboard = () => {
     );
   }
 
-  // 사용자 정보 파싱 - roleInfo에서 학년, 반 정보 추출
-  const roleInfoParts = userInfo?.roleInfo
-    ? userInfo.roleInfo.match(/(\d+)학년\s*(\d+)반/)
-    : null;
-  const grade = roleInfoParts ? roleInfoParts[1] : "";
-  const classNum = roleInfoParts ? roleInfoParts[2] : "";
+  // 학생 개인정보는 userInfo에서 바로 사용
 
   return (
     <DashboardLayout
