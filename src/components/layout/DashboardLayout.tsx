@@ -16,6 +16,7 @@ interface LayoutProps {
   userRole: string;
   userInfo?: string;
   notificationCount?: number;
+  userType?: string;
 }
 
 // 레이아웃 컨테이너
@@ -221,6 +222,7 @@ export const DashboardLayout: React.FC<LayoutProps> = ({
   userRole,
   userInfo,
   notificationCount = 0,
+  userType,
 }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -302,7 +304,7 @@ export const DashboardLayout: React.FC<LayoutProps> = ({
           <UserInfo>
             <UserName>{userName}</UserName>
             <UserRole>
-              {userRole} {userInfo && `(${userInfo})`}
+              {userType === "PARENT" ? "학부모" : `${userRole} ${userInfo ? `(${userInfo})` : ""}`}
             </UserRole>
           </UserInfo>
         </UserSection>
