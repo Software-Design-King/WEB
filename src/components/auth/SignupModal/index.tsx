@@ -469,16 +469,16 @@ const SignupModal: React.FC<SignupModalProps> = ({
           // subject: formData.subject || undefined, // Example if teacher has subject
         };
       } else {
-        // PARENT
+        // PARENT (학부모는 이름, 자녀 가입코드만)
         apiPayload = {
-          userType: "PARENT",
           userName: formData.userName, // Parent's name
-          childName: formData.childName,
-          grade: parseInt(formData.grade), // Child's grade
-          classNum: parseInt(formData.classNum), // Child's class
-          number: parseInt(formData.number), // Child's number
-          contact: formData.contact || undefined, // Parent's contact
-        };
+          studentRegisterCode: formData.enrollCode, // 자녀 가입코드
+          childName: formData.childName || null, // 자녀 이름 전달
+          grade: null,
+          classNum: null,
+          number: null,
+          kakaoToken: kakaoToken,
+        } as any;
       }
 
       // 회원가입 API 호출
@@ -493,27 +493,49 @@ const SignupModal: React.FC<SignupModalProps> = ({
         // 응답에서 직접 사용자 정보를 Zustand에 저장
         if (response.userInfo) {
           const setUserInfo = useUserStore.getState().setUserInfo;
-          // API에서 받은 UserInfo를 Zustand의 UserInfo 형식에 맞게 변환
+          // studentId가 있으면 별도 저장
           const storeUserInfo = {
             name: response.userInfo.name || "",
-            roleInfo: response.userInfo.roleInfo || `${response.userInfo.userType === 'STUDENT' ? '학생' : 
-                      response.userInfo.userType === 'TEACHER' ? '교사' : '학부모'}`,
+            roleInfo:
+              response.userInfo.roleInfo ||
+              `${
+                response.userInfo.userType === "STUDENT"
+                  ? "학생"
+                  : response.userInfo.userType === "TEACHER"
+                  ? "교사"
+                  : "학부모"
+              }`,
             number: response.userInfo.number || null,
             userType: response.userInfo.userType,
-            userId: response.userInfo.userId
+            userId: response.userInfo.userId,
+            studentId: response.userInfo.studentId || undefined,
           };
           setUserInfo(storeUserInfo);
-          console.log("사용자 정보가 성공적으로 저장되었습니다:", storeUserInfo);
+          if (response.userInfo.studentId) {
+            if (useUserStore.getState().setStudentId) {
+              useUserStore.getState().setStudentId(response.userInfo.studentId);
+            }
+          }
+          console.log(
+            "사용자 정보가 성공적으로 저장되었습니다:",
+            storeUserInfo
+          );
         }
 
         // response.userInfo에서 직접 사용자 유형을 확인하여 리다이렉트
-        if (response.userInfo?.userType === "STUDENT" || response.userInfo?.userType === "PARENT") {
+        if (
+          response.userInfo?.userType === "STUDENT" ||
+          response.userInfo?.userType === "PARENT"
+        ) {
           navigate("/student/dashboard");
         } else if (response.userInfo?.userType === "TEACHER") {
           navigate("/teacher/dashboard");
         } else {
           // userInfo가 없거나 userType이 명확하지 않은 경우 formData로 백업
-          if (formData.userType === "STUDENT" || formData.userType === "PARENT") {
+          if (
+            formData.userType === "STUDENT" ||
+            formData.userType === "PARENT"
+          ) {
             navigate("/student/dashboard");
           } else {
             navigate("/teacher/dashboard");
@@ -561,16 +583,12 @@ const SignupModal: React.FC<SignupModalProps> = ({
           return true;
         }
         if (formData.userType === "PARENT") {
-          if (!formData.userName || !formData.childName) {
-            setError("모든 필수 항목을 입력해주세요.");
+          if (!formData.userName) {
+            setError("이름을 입력해주세요.");
             return false;
           }
-          if (!formData.grade || !formData.classNum) {
-            setError("학년과 반을 선택해주세요.");
-            return false;
-          }
-          if (!formData.number) {
-            setError("자녀의 번호를 입력해주세요.");
+          if (!formData.enrollCode) {
+            setError("자녀 가입코드를 입력해주세요.");
             return false;
           }
           return true;
@@ -839,79 +857,22 @@ const SignupModal: React.FC<SignupModalProps> = ({
                     />
                   </FormGroup>
                   <FormGroup>
-                    <Label htmlFor="childName">
-                      자녀 이름<RequiredMark>*</RequiredMark>
+                    <Label htmlFor="enrollCode">
+                      자녀 가입코드<RequiredMark>*</RequiredMark>
                     </Label>
                     <Input
                       type="text"
-                      id="childName"
-                      name="childName"
-                      value={formData.childName}
+                      id="enrollCode"
+                      name="enrollCode"
+                      value={formData.enrollCode}
                       onChange={handleChange}
-                      placeholder="자녀의 이름을 입력하세요"
+                      placeholder="자녀의 가입코드를 입력하세요"
                       required
                     />
                   </FormGroup>
-                  <FieldWrapper>
-                    <FormGroup>
-                      <Label htmlFor="grade">
-                        자녀 학년<RequiredMark>*</RequiredMark>
-                      </Label>
-                      <Select
-                        id="grade"
-                        name="grade"
-                        value={formData.grade}
-                        onChange={handleChange}
-                        required
-                      >
-                        <option value="" disabled>
-                          학년 선택
-                        </option>
-                        {[1, 2, 3, 4, 5, 6].map((num) => (
-                          <option key={num} value={num}>
-                            {num}학년
-                          </option>
-                        ))}
-                      </Select>
-                    </FormGroup>
-                    <FormGroup>
-                      <Label htmlFor="classNum">
-                        자녀 반<RequiredMark>*</RequiredMark>
-                      </Label>
-                      <Select
-                        id="classNum"
-                        name="classNum"
-                        value={formData.classNum}
-                        onChange={handleChange}
-                        required
-                      >
-                        <option value="" disabled>
-                          반 선택
-                        </option>
-                        {[...Array(10)].map((_, i) => (
-                          <option key={i + 1} value={i + 1}>
-                            {i + 1}반
-                          </option>
-                        ))}
-                      </Select>
-                    </FormGroup>
-                  </FieldWrapper>
-                  <FormGroup>
-                    <Label htmlFor="number">
-                      자녀 번호<RequiredMark>*</RequiredMark>
-                    </Label>
-                    <Input
-                      type="number"
-                      id="number"
-                      name="number"
-                      value={formData.number}
-                      onChange={handleChange}
-                      placeholder="자녀의 번호를 입력하세요 (예: 7)"
-                      required
-                      min="1"
-                      max="50"
-                    />
-                  </FormGroup>
+                  <InputNote>
+                    자녀의 가입코드는 학생이 받은 가입코드를 입력해주세요.
+                  </InputNote>
                 </>
               )}
             </FormSection>

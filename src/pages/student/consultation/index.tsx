@@ -254,6 +254,8 @@ const MOCK_CONSULTATIONS: ConsultationRecord[] = [
 // 컴포넌트
 const StudentConsultationPage: React.FC = () => {
   const userInfo = useUserStore((state) => state.userInfo);
+// 학생/학부모 모두를 위한 studentId 추출
+const studentId = userInfo?.userType === "PARENT" ? userInfo?.studentId : userInfo?.userId;
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [filteredConsultations, setFilteredConsultations] = useState<ConsultationRecord[]>([]);
 

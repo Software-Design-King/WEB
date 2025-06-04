@@ -161,7 +161,6 @@ export const signup = async (
     // 백엔드 API 형식에 맞게 데이터 변환
     const apiData = {
       ...userData,
-      kakaoToken: kakaoToken, // 요청 본문에 kakaoToken 추가
     };
 
     // API 엔드포인트 선택 (학부모인 경우 다른 엔드포인트 사용)
@@ -182,6 +181,9 @@ export const signup = async (
       {
         headers: {
           "Content-Type": "application/json",
+          ...(userData.userType === "PARENT" && kakaoToken
+            ? { Authorization: `Bearer ${kakaoToken}` }
+            : {}),
         },
         // 모든 상태 코드에 대해 응답 받기
         validateStatus: (status) => true,

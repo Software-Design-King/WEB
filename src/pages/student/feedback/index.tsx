@@ -408,6 +408,8 @@ const StudentFeedbackPage: React.FC = () => {
 
   // 학년/반/번호 정보 구성
   const getUserInfoText = () => {
+    const userInfo = useUserStore((state) => state.userInfo);
+    const studentId = userInfo?.userType === "PARENT" ? userInfo?.studentId : userInfo?.userId;
     if (!userInfo) return "";
     const grade = userInfo.roleInfo?.match(/\d+학년/)?.[0] || "";
     const classNum = userInfo.roleInfo?.match(/\d+반/)?.[0] || "";

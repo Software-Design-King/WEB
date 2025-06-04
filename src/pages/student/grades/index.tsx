@@ -205,6 +205,8 @@ const TeacherGradesPage: React.FC = () => {
 
   // Zustand에서 사용자 정보 가져오기
   const userInfo = useUserStore((state) => state.userInfo);
+// 학생/학부모 모두를 위한 studentId 추출
+const studentId = userInfo?.userType === "PARENT" ? userInfo?.studentId : userInfo?.userId;
 
   const [selectedStudent, setSelectedStudent] = useState<number | null>(
     userInfo?.userId

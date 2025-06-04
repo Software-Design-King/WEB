@@ -10,6 +10,7 @@ export interface UserInfo {
   number: number | null;
   userType: "STUDENT" | "TEACHER" | "PARENT" | null;
   userId?: number;
+  studentId?: number; // 학부모의 자녀 id (studentId)
 }
 
 // API 응답에서 내부 UserInfo 형식으로 변환하는 함수
@@ -37,6 +38,7 @@ interface UserState {
   isLoading: boolean;
   error: string | null;
   setUserInfo: (info: UserInfo | null) => void;
+  setStudentId: (studentId: number) => void;
   loadUserInfo: (token: string) => Promise<UserInfo | null>;
   logout: () => void;
 }
@@ -51,6 +53,13 @@ export const useUserStore = create<UserState>()(
 
       // 사용자 정보 설정
       setUserInfo: (info) => set({ userInfo: info }),
+
+      // studentId 개별 저장 (학부모용)
+      setStudentId: (studentId) => {
+        set((state) => ({
+          userInfo: state.userInfo ? { ...state.userInfo, studentId } : { studentId } as UserInfo,
+        }));
+      },
 
       // 사용자 정보 로드 (API 호출)
       loadUserInfo: async (token) => {

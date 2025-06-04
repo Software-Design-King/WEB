@@ -283,23 +283,38 @@ export const enrollStudents = async (
   const token = localStorage.getItem("token");
 
   try {
-    // 날짜 데이터 포맷 처리 (ISO 문자열로 변환)
     const processedStudents = students.map(student => {
-      // 만약 birthDate가 Date 객체이거나 날짜 형식이 아닌 경우 변환
-      if (
-        student.birthDate &&
-        (typeof student.birthDate === "number" ||
-          student.birthDate instanceof Date)
-      ) {
-        return {
-          ...student,
-          birthDate:
-            typeof student.birthDate === "number"
-              ? new Date(student.birthDate).toISOString().split("T")[0]
-              : (student.birthDate as Date).toISOString().split("T")[0],
-        };
+      let processed = { ...student };
+      // birthDate 변환
+      if (processed.birthDate) {
+        if (typeof processed.birthDate === "number") {
+          // 숫자(예: 20200101)가 들어온 경우 yyyy-mm-dd 문자열로 변환
+          const birthNum = processed.birthDate;
+          const birthStr = birthNum.toString();
+          if (birthStr.length === 8) {
+            // 8자리: yyyymmdd
+            processed.birthDate = `${birthStr.slice(0,4)}-${birthStr.slice(4,6)}-${birthStr.slice(6,8)}`;
+          } else {
+            // 그 외는 Date로 변환 시도
+            processed.birthDate = new Date(birthNum).toISOString().split("T")[0];
+          }
+        } else if (processed.birthDate instanceof Date) {
+          processed.birthDate = processed.birthDate.toISOString().split("T")[0];
+        }
+        // 이미 yyyy-mm-dd 문자열이면 그대로 둠
       }
-      return student;
+      // birthDate가 null/빈값이면 필드 제거
+      if (!processed.birthDate) {
+        delete processed.birthDate;
+      }
+      // 모든 null 값 필드 제거
+      Object.keys(processed).forEach(key => {
+        if (processed[key] === null) {
+          delete processed[key];
+        }
+      });
+      return { ...processed, enrollCode: null };
+
     });
 
     const response = await axios.post<EnrollStudentResponse>(

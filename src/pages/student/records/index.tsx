@@ -83,6 +83,8 @@ interface StudentRecord {
 const StudentRecordsPage: React.FC = () => {
   // Zustand 스토어에서 사용자 정보 가져오기
   const userInfo = useUserStore((state) => state.userInfo);
+// 학생/학부모 모두를 위한 studentId 추출
+const studentId = userInfo?.userType === "PARENT" ? userInfo?.studentId : userInfo?.userId;
   const isLoading = useUserStore((state) => state.isLoading);
 
   // 상태 관리
