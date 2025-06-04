@@ -691,37 +691,6 @@ const TeacherGradesPage: React.FC = () => {
                                 >
                                   {gradeData.title}
                                 </h3>
-                                <div>
-                                  <Button
-                                    type="primary"
-                                    icon={<EditOutlined />}
-                                    onClick={() =>
-                                      handleEditAllScores(
-                                        gradeData.grade,
-                                        gradeData.semester,
-                                        "중간고사"
-                                      )
-                                    }
-                                    size="small"
-                                    style={{ marginRight: "8px" }}
-                                  >
-                                    중간고사 편집
-                                  </Button>
-                                  <Button
-                                    type="primary"
-                                    icon={<EditOutlined />}
-                                    onClick={() =>
-                                      handleEditAllScores(
-                                        gradeData.grade,
-                                        gradeData.semester,
-                                        "기말고사"
-                                      )
-                                    }
-                                    size="small"
-                                  >
-                                    기말고사 편집
-                                  </Button>
-                                </div>
                               </div>
                               <Table
                                 dataSource={tableData}
