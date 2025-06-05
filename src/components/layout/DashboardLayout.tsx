@@ -304,7 +304,7 @@ export const DashboardLayout: React.FC<LayoutProps> = ({
           <UserInfo>
             <UserName>{userName}</UserName>
             <UserRole>
-              {userType === "PARENT" ? "학부모" : `${userRole} ${userInfo ? `(${userInfo})` : ""}`}
+              {userType === "PARENT" ? `학부모 ${userInfo || ""}` : `${userRole} ${userInfo ? `(${userInfo})` : ""}`}
             </UserRole>
           </UserInfo>
         </UserSection>
